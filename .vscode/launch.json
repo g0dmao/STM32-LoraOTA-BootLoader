@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // 【混合架构】OpenOCD 运行在 Windows 端，GDB 在 WSL 端
+            "name": "Debug (Windows OpenOCD)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "external", // 关键：告诉插件 OpenOCD 已经在外部启动了
+            "gdbTarget": "localhost:3333", // 替换为你的 Windows 宿主机 IP
+            "executable": "${workspaceFolder}/bin/BootLoader.elf", // 替换为你的实际 elf 路径
+            "cwd": "${workspaceRoot}",
+            "runToEntryPoint": "main", // 启动后自动在 main 函数停下
+
+            // 进阶功能（可选但强烈推荐）
+            "svdFile": "${workspaceRoot}/STM32F411.svd", // 替换为你的芯片 SVD 文件路径
+            //"rtos": "FreeRTOS" // 如果你跑了 RTOS，开启此项可以查看所有线程状态
+        }
+    ]
+}

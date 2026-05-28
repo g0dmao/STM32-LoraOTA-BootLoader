@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "STM32_ARM",
+            "compilerPath": "/home/gdm/prjts/ARM_TOOLCHAIN/AArch32-BareMetal/arm-none-eabi-PATH/arm-none-eabi-gcc",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}
