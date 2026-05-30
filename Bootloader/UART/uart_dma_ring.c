@@ -30,6 +30,12 @@ uint8_t bootUART_ReadByte(uint8_t *pData)
     // 实时更新写指针
     rx_write_ptr = configRX_BUF_SIZE - __HAL_DMA_GET_COUNTER(g_uart_handle->hdmarx);
 
+    // 当 DMA 计数器归零瞬间，写指针会等于 configRX_BUF_SIZE，回绕到 0
+    if (rx_write_ptr >= configRX_BUF_SIZE)
+    {
+        rx_write_ptr = 0;
+    }
+
     // 如果读指针等于写指针，说明目前没有新数据
     if (rx_read_ptr == rx_write_ptr)
     {
