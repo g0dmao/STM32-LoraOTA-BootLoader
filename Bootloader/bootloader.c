@@ -1,5 +1,7 @@
 #include "bootloader.h"
-#include "configBootloader.h"
+#include "main.h"
+
+extern void CloseAllPeripheral(void);
 
 __attribute__((naked, noreturn)) static void bootJump_Execute(uint32_t app_sp, uint32_t app_pc)
 {
@@ -9,14 +11,14 @@ __attribute__((naked, noreturn)) static void bootJump_Execute(uint32_t app_sp, u
     );
 }
 
-void Bootloader_JumpToApp(pFunction CloseAllPeripheralFuc)
+void Bootloader_JumpToApp(uint32_t app_address)
 {
 
   // 读取 App 的栈顶指针
-  uint32_t app_sp = *(__IO uint32_t*)configAPP_ADDRESS;
+  uint32_t app_sp = *(__IO uint32_t*)app_address;
 
   // 读取 App 的复位中断服务函数地址
-  uint32_t app_pc = *(__IO uint32_t*)(configAPP_ADDRESS + 4);
+  uint32_t app_pc = *(__IO uint32_t*)(app_address + 4);
 
   // 检查栈顶指针是否合法
   // F411 RAM 起始于 0x20000000，大小 128KB (0x20000000 ~ 0x2001FFFF)
@@ -26,7 +28,7 @@ void Bootloader_JumpToApp(pFunction CloseAllPeripheralFuc)
     __disable_irq();  // 全局关闭中断
 
     // 彻底关闭各种外设
-    CloseAllPeripheralFuc();
+    CloseAllPeripheral();
 
     // 清理NVIC
     for (int i = 0; i < 8; i++)
@@ -43,7 +45,7 @@ void Bootloader_JumpToApp(pFunction CloseAllPeripheralFuc)
     // === 交接 ===
 
     // 设置中断向量表基地址；设置主堆栈指针为 App 的 SP
-    SCB->VTOR = configAPP_ADDRESS;
+    SCB->VTOR = app_address;
 
     bootJump_Execute(app_sp, app_pc);
 

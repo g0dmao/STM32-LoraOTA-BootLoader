@@ -1,9 +1,8 @@
 #ifndef __BOOTLOADER_H__
 #define __BOOTLOADER_H__
 
-#include "main.h"
+#include <stdint.h>
 
-typedef void (*pFunction)(void);
-void Bootloader_JumpToApp(pFunction CloseAllPeripheralFuc);
+void Bootloader_JumpToApp(uint32_t app_address);
 
 #endif
