@@ -12,18 +12,22 @@ int8_t bootOTA_ReadParamOTA(OTA_Context_t *ota_ctx, OTA_Param_t *param)
     {
         param->active_partition = 0;
     }
+
+    // 兼容旧版参数：current_version 为擦除态 0xFFFFFFFF 则重置为 0（首次启动）
+    if (param->current_version == 0xFFFFFFFF)
+    {
+        param->current_version = 0;
+    }
     return 0;
 }
 
-int8_t bootOTA_SaveParamOTA(OTA_Context_t *ota_ctx, uint32_t size, uint32_t crc, uint8_t active_partition)
+int8_t bootOTA_SaveParamOTA(OTA_Context_t *ota_ctx, const OTA_Param_t *param)
 {
-    OTA_Param_t new_param = {
-        .magic_flag = configOTA_VALID_MAGIC,
-        .app_size   = size,
-        .app_crc    = crc,
-        .active_partition = active_partition,
-        .reserved   = {0xFF, 0xFF, 0xFF}
-    };
+    OTA_Param_t new_param = *param;
+
+    // magic_flag 统一由此函数设置，调用方只需关心业务字段
+    new_param.magic_flag = configOTA_VALID_MAGIC;
+
     if (ota_ctx->erase_cb(ota_ctx->param_sector, ota_ctx->param_sector_num) != 0) {
         return -1;
     }

@@ -6,10 +6,11 @@
 
 typedef struct OTA_Param{
     uint32_t magic_flag;        // 升级成功标志位
-    uint32_t app_size;          // 固件实际大小
+    uint32_t app_size;          // 固件总大小（含 Footer）
     uint32_t app_crc;           // 固件的整体 CRC 校验值
     uint8_t  active_partition;  // 当前活跃分区: 0 = Partition A, 1 = Partition B
-    uint8_t  reserved[3];       // 保留位,对齐到 16 字节，方便 Flash 写入
+    uint8_t  reserved[3];       // 保留位
+    uint32_t current_version;   // 当前活跃固件的版本号（防回滚依据，0 表示无固件）
 } OTA_Param_t;
 
 typedef struct OTA_Context{
@@ -33,15 +34,13 @@ typedef struct OTA_Context{
 int8_t bootOTA_ReadParamOTA(OTA_Context_t *ota_ctx, OTA_Param_t *param);
 
 /**
- * @brief 写入OTA参数分区
+ * @brief 写入OTA参数分区（擦除 + 写入）
  *
- * @param ota_ctx           ota上下文结构体
- * @param size              固件大小
- * @param crc               固件CRC值
- * @param active_partition  固件写入的分区
- * @return int8_t           0：成功
+ * @param ota_ctx  ota上下文结构体
+ * @param param    要写入的 OTA 参数（magic_flag 由函数内部设置为 configOTA_VALID_MAGIC）
+ * @return int8_t  0：成功
  */
-int8_t bootOTA_SaveParamOTA(OTA_Context_t *ota_ctx, uint32_t size, uint32_t crc, uint8_t active_partition);
+int8_t bootOTA_SaveParamOTA(OTA_Context_t *ota_ctx, const OTA_Param_t *param);
 
 /**
  * @brief 获取当前活跃分区地址
