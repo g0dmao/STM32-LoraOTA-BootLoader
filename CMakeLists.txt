@@ -50,6 +50,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/ymodem.c
     Bootloader/flasher.c
     Bootloader/ota.c
+    Bootloader/sign_verify.c
 )
 
 # Add include paths
