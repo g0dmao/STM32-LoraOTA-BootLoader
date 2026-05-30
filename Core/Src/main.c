@@ -60,7 +60,6 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void CloseAllPeripheral(void);
 void BootloaderInit(void);
-extern uint16_t CalcCRC16(const uint8_t *data, uint32_t size);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/

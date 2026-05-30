@@ -46,6 +46,7 @@ typedef struct YM_InfoBlock {
 }YM_InfoBlock_t;
 
 
+uint16_t CalcCRC16(const uint8_t *data, uint32_t size);
 int8_t bootYM_EstablishConnection(YM_InfoBlock_t *ym);
 int8_t bootYM_AccepctOnePacket(YM_InfoBlock_t *ym);
 void bootYM_Abort(YM_InfoBlock_t *ym);
