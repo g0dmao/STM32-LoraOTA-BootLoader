@@ -31,6 +31,7 @@
 #include "ymodem.h"
 #include "flasher.h"
 #include "ota.h"
+#include "sign_verify.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -107,7 +108,6 @@ int main(void)
   uint32_t write_offset = 0;
   uint32_t write_addr   = 0;
   int      sector = 0, sector_num = 0;
-  uint8_t  new_active = 0;
 
 
 
@@ -169,10 +169,40 @@ loop_YM_ReceiveAndFlash:
       }
     }else if(ret == YM_RETURN_CODE_EOT)
     {
-      uint32_t new_app_crc = CalcCRC16((uint8_t*)write_addr, ym_ctx.file_size);
-      new_active = (param.active_partition == 0) ? 1 : 0;
-      bootOTA_SaveParamOTA(&ota_ctx, ym_ctx.file_size, new_app_crc, new_active);
-      param.active_partition = new_active;
+      FW_SignInfo_t sign_info;
+      uint32_t fw_bin_size = 0;
+
+      /* 1. 解析 Footer + 签名校验 */
+      int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, ym_ctx.file_size,
+                                               &sign_info, &fw_bin_size);
+      if (sig_ret != 0)
+      {
+        printf("SIG_ERR: %d\r\n", sig_ret);
+        bootYM_Abort(&ym_ctx);
+        goto err;
+      }
+
+      /* 2. 防回滚检查：新版本号必须 >= 当前版本号 */
+      if (sign_info.version < param.current_version)
+      {
+        printf("ROLLBACK: v%lu < v%lu\r\n", sign_info.version, param.current_version);
+        bootYM_Abort(&ym_ctx);
+        goto err;
+      }
+
+      /* 3. CRC 校验（仅固件本体，不含 Footer） */
+      OTA_Param_t new_param = {
+        .app_size   = fw_bin_size,
+        .app_crc    = CalcCRC16((uint8_t*)write_addr, fw_bin_size),
+        .active_partition = (uint8_t)((param.active_partition == 0) ? 1 : 0),
+        .current_version  = sign_info.version,
+        .reserved   = {0xFF, 0xFF, 0xFF}
+      };
+
+      bootOTA_SaveParamOTA(&ota_ctx, &new_param);
+
+      param.active_partition = new_param.active_partition;
+      param.current_version  = sign_info.version;
       goto Jump;
     }else
     {
