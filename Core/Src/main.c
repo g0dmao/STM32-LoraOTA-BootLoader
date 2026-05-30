@@ -105,17 +105,24 @@ int main(void)
 
   OTA_Param_t param;
   uint32_t write_offset = 0;
+  uint32_t write_addr   = 0;
+  int      sector = 0, sector_num = 0;
+  uint8_t  new_active = 0;
 
 
 
 /*-----------------------------------------------*/
-// 开机校验
+// 开机校验：读取 OTA 参数，校验活跃分区 CRC
 
   if (bootOTA_ReadParamOTA(&ota_ctx, &param) != 0)
   {
     goto err;
   }
-  if (param.magic_flag == configOTA_VALID_MAGIC && CalcCRC16((uint8_t*)configAPP_ADDRESS, param.app_size) == (uint16_t)param.app_crc)
+
+  uint32_t active_addr = bootOTA_GetActivePartitionAddr(&param);
+
+  if (param.magic_flag == configOTA_VALID_MAGIC &&
+      CalcCRC16((uint8_t*)active_addr, param.app_size) == (uint16_t)param.app_crc)
   {
     goto Jump;
   }
@@ -125,17 +132,19 @@ int main(void)
 loop_YM_ConnectAndErase:
 /*-----------------------------------------------*/
 // loop_YM_ConnectAndErase:
-  //尝试与Ymodem协议上位机建立连接,一旦建立连接，则擦除app程序区，进入通信循环
+// 尝试与 Ymodem 上位机建立连接，一旦连接成功，擦除【非活跃】分区
 
   for(;;)
   {
     if(bootYM_EstablishConnection(&ym_ctx) == YM_RETURN_CODE_OK)
     {
-      if(ota_ctx.erase_cb(configAPP_SECTOR, configAPP_SECTOR_NUMBER) != 0)
+      bootOTA_GetInactivePartitionEraseInfo(&param, &sector, &sector_num);
+      if(ota_ctx.erase_cb(sector, sector_num) != 0)
       {
         bootYM_Abort(&ym_ctx);
         goto err;
       }
+      write_addr = bootOTA_GetInactivePartitionAddr(&param);
       goto loop_YM_ReceiveAndFlash;
     }
   }
@@ -144,7 +153,7 @@ loop_YM_ConnectAndErase:
 
 loop_YM_ReceiveAndFlash:
 /*-----------------------------------------------*/
-// loop_YM_ReceiveAndFlash: 接收Ymodem协议数据包并写入flash
+// loop_YM_ReceiveAndFlash: 接收 Ymodem 数据包并写入【非活跃】分区
 
   for(;;)
   {
@@ -153,15 +162,17 @@ loop_YM_ReceiveAndFlash:
     if(ret == YM_RETURN_CODE_OK)
     {
       write_offset = ym_ctx.total_receive_byte - ym_ctx.packet_len;
-      if(ota_ctx.write_cb(configAPP_ADDRESS + write_offset, ym_ctx.packet_data, ym_ctx.packet_len) != 0)
+      if(ota_ctx.write_cb(write_addr + write_offset, ym_ctx.packet_data, ym_ctx.packet_len) != 0)
       {
         bootYM_Abort(&ym_ctx);
         goto err;
       }
     }else if(ret == YM_RETURN_CODE_EOT)
     {
-      uint32_t new_app_crc = CalcCRC16((uint8_t*)configAPP_ADDRESS, ym_ctx.file_size);
-      bootOTA_SaveParamOTA(&ota_ctx, ym_ctx.file_size, new_app_crc, configOTA_VALID_MAGIC);
+      uint32_t new_app_crc = CalcCRC16((uint8_t*)write_addr, ym_ctx.file_size);
+      new_active = (param.active_partition == 0) ? 1 : 0;
+      bootOTA_SaveParamOTA(&ota_ctx, ym_ctx.file_size, new_app_crc, new_active);
+      param.active_partition = new_active;
       goto Jump;
     }else
     {
@@ -174,7 +185,7 @@ loop_YM_ReceiveAndFlash:
 
 Jump:
 /*-----------------------------------------------*/
-// Jump: 跳转到主程序区
+// Jump: 跳转到活跃分区 App
 
   int i = 3;
   while(i)
@@ -184,7 +195,7 @@ Jump:
     HAL_Delay(1000);
   }
   printf("Byebye:)\r\n");
-  Bootloader_JumpToApp(CloseAllPeripheral);
+  Bootloader_JumpToApp(bootOTA_GetActivePartitionAddr(&param));
 /*-----------------------------------------------*/
 
 

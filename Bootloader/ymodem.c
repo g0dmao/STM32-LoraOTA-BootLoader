@@ -299,20 +299,3 @@ void bootYM_Abort(YM_InfoBlock_t *ym)
     ym->send_byte_cb(YM_CAN);
 }
 
-// void bootYM_RegisterOps(YM_InfoBlock_t *ym,
-//                         YM_SendByteFuc_t fucSend,
-//                         YM_ReadByteFuc_t fucRead,
-//                         uint32_t (*fucGetTick)(void)
-//                         )
-// {
-//     ym->send_byte_cb = fucSend;
-//     ym->read_byte_cb = fucRead;
-//     ym->get_tick_cb = fucGetTick;
-// }
-
-
-
-
-
-
-

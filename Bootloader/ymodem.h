@@ -45,10 +45,37 @@ typedef struct YM_InfoBlock {
 
 }YM_InfoBlock_t;
 
-
+/**
+ * @brief CRC16校验
+ *
+ * @param data 待校验数据区
+ * @param size 数据长度
+ * @return uint16_t CRC值
+ */
 uint16_t CalcCRC16(const uint8_t *data, uint32_t size);
+
+/**
+ * @brief 请求通信
+ *
+ * @param ym Ymodem上下文
+ * @return int8_t 状态码
+ */
 int8_t bootYM_EstablishConnection(YM_InfoBlock_t *ym);
+
+/**
+ * @brief 接收一个Ymodem数据包
+ *
+ * @param ym Ymodem上下文
+ * @return int8_t 状态码
+ */
 int8_t bootYM_AccepctOnePacket(YM_InfoBlock_t *ym);
+
+/**
+ * @brief 强制结束通信
+ *
+ * @param ym Ymodem上下文
+ * @note 在传输错误处理时调用
+ */
 void bootYM_Abort(YM_InfoBlock_t *ym);
 
 #endif
