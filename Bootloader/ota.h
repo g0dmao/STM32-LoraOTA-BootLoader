@@ -5,10 +5,11 @@
 
 
 typedef struct OTA_Param{
-    uint32_t magic_flag;   // 升级成功标志位
-    uint32_t app_size;     // 固件实际大小
-    uint32_t app_crc;      // 固件的整体 CRC 校验值
-    uint32_t reserved;     // 保留位,对齐到 16 字节，方便 Flash 写入
+    uint32_t magic_flag;        // 升级成功标志位
+    uint32_t app_size;          // 固件实际大小
+    uint32_t app_crc;           // 固件的整体 CRC 校验值
+    uint8_t  active_partition;  // 当前活跃分区: 0 = Partition A, 1 = Partition B
+    uint8_t  reserved[3];       // 保留位,对齐到 16 字节，方便 Flash 写入
 } OTA_Param_t;
 
 typedef struct OTA_Context{
@@ -23,8 +24,11 @@ typedef struct OTA_Context{
 } OTA_Context_t;
 
 int8_t bootOTA_ReadParamOTA(OTA_Context_t *ota_ctx, OTA_Param_t *param);
-int8_t bootOTA_SaveParamOTA(OTA_Context_t *ota_ctx, uint32_t size, uint32_t crc, uint32_t magic_flag);
+int8_t bootOTA_SaveParamOTA(OTA_Context_t *ota_ctx, uint32_t size, uint32_t crc, uint8_t active_partition);
 
+uint32_t bootOTA_GetActivePartitionAddr(const OTA_Param_t *param);
+uint32_t bootOTA_GetInactivePartitionAddr(const OTA_Param_t *param);
+void     bootOTA_GetInactivePartitionEraseInfo(const OTA_Param_t *param, int *sector, int *sector_num);
 
 #endif
 
