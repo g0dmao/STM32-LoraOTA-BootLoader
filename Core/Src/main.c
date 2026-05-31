@@ -52,9 +52,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
 YM_InfoBlock_t ym_ctx;
 OTA_Context_t  ota_ctx;
+
+/* extern from Core/Src/stm32f4xx_it.c */
 extern volatile uint32_t g_sys_tick;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -174,9 +178,11 @@ loop_YM_ReceiveAndFlash:
       }
     }else if(ret == YM_RETURN_CODE_EOT)
     {
-      FW_SignInfo_t sign_info;
-      uint32_t fw_bin_size = 0;
 
+      uint32_t fw_bin_size = 0;
+      #if(configUSE_FOOTER)
+
+      FW_SignInfo_t sign_info;
       /* 1. 解析 Footer + 签名校验 */
       int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, ym_ctx.file_size,
                                                &sign_info, &fw_bin_size);
@@ -194,6 +200,10 @@ loop_YM_ReceiveAndFlash:
         bootYM_Abort(&ym_ctx);
         goto err;
       }
+
+      #else
+        fw_bin_size = ym_ctx.file_size
+      #endif
 
       /* 3. CRC 校验（仅固件本体，不含 Footer） */
       OTA_Param_t new_param = {

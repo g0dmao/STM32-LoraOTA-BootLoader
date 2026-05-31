@@ -1,6 +1,9 @@
+
 #include "sign_verify.h"
 #include "configBootloader.h"
 #include <string.h>
+
+#if(configUSE_FOOTER)
 
 /* Ed25519 公钥（32 字节），由上位机签名工具生成，编译进 BootLoader */
 static const uint8_t ed25519_pubkey[32] = configED25519_PUBKEY;
@@ -68,3 +71,5 @@ int8_t bootSIG_ParseAndVerify(uint32_t fw_addr, uint32_t fw_total_size,
     return ed25519_verify(footer.signature, ed25519_pubkey,
                           (const uint8_t*)fw_addr, *fw_bin_size);
 }
+
+#endif

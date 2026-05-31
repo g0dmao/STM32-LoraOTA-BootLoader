@@ -24,7 +24,7 @@
 #define configPART_B_SECTOR        5
 #define configPART_B_SECTOR_NUM    1     // Sector 5 (128KB, 仅前 80KB 用于 App)
 
-// --- App 约束 ---
+// --- App 固件大小约束 ---
 #define configAPP_MAX_SIZE         (80 * 1024)
 
 // --- OTA 参数区 ---
@@ -45,8 +45,12 @@
 // 固件签名校验（Ed25519）
 // ============================================================
 
+// 如果只想传裸固件，不附加footer，请改为No
+// 这会忽略签名校验和版本检查（防回滚）
+#define configUSE_FOOTER           Yes
+
 // 签名校验开关：1 = 强制验签，0 = 跳过（调试用）
-#define configSIG_VERIFY_ENABLE    1
+#define configSIG_VERIFY_ENABLE    Yes
 
 // Ed25519 公钥（32 字节），由上位机签名工具生成
 // TODO: 替换为实际公钥
