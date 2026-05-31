@@ -47,7 +47,7 @@
 
 // 如果只想传裸固件，不附加footer，请改为No
 // 这会忽略签名校验和版本检查（防回滚）
-#define configUSE_FOOTER           Yes
+#define configUSE_FOOTER           No
 
 // 签名校验开关：1 = 强制验签，0 = 跳过（调试用）
 #define configSIG_VERIFY_ENABLE    Yes

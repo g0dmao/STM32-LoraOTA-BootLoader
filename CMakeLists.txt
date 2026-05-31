@@ -82,13 +82,13 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 )
 
 # 编译阶段优化选项
-target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
-    -Os                 # 核心：按体积优化代码
+# target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+#     -Os                 # 核心：按体积优化代码
 
-)
+# )
 
-# 链接阶段优化选项
-target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
-    -Os                 # 链接器也需要感知按体积优化
-    -Wl,--gc-sections   # 核心：垃圾回收，剔除所有未被调用的函数和变量段
-)
+# # 链接阶段优化选项
+# target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+#     -Os                 # 链接器也需要感知按体积优化
+#     -Wl,--gc-sections   # 核心：垃圾回收，剔除所有未被调用的函数和变量段
+# )
