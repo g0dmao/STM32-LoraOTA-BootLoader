@@ -45,19 +45,20 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    Bootloader/UART/uart_dma_ring.c
     Bootloader/bootloader.c
     Bootloader/ymodem.c
-    Bootloader/flasher.c
     Bootloader/ota.c
     Bootloader/sign_verify.c
+    Bootloader/port/uart/uart_dma_ring.c
+    Bootloader/port/flasher/flasher.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Bootloader
-    Bootloader/UART/inc
+    Bootloader/port/flasher
+    Bootloader/port/uart
 )
 
 # Add project symbols (macros)
