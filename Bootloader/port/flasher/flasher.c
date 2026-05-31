@@ -129,7 +129,9 @@ int8_t bootFlasher_WriteByte(uint32_t address, uint8_t *data, uint16_t length)
     flash_unlock();
     flash_clear_flags();
 
-    /* 启用编程模式，PSIZE 保持默认 00 = x8 (byte) */
+    /* 启用编程模式，PSIZE = 00 = x8 (byte)，与逐字节写入匹配 */
+    FLASH->CR &= ~FLASH_CR_PSIZE;  // PSIZE 清零 → x8
+
     FLASH->CR |= FLASH_CR_PG;
 
     for (uint16_t i = 0; i < length; i++)
