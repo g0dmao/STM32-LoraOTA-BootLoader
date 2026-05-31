@@ -101,7 +101,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -119,7 +119,6 @@ int main(void)
   int      sector = 0, sector_num = 0;
 
 
-
 /*-----------------------------------------------*/
 // 开机校验：读取 OTA 参数，校验活跃分区 CRC
 
@@ -129,6 +128,9 @@ int main(void)
   }
 
   uint32_t active_addr = bootOTA_GetActivePartitionAddr(&param);
+
+  // 调试用，直接跳到下载循环
+  goto loop_YM_ConnectAndErase;
 
   if (param.magic_flag == configOTA_VALID_MAGIC &&
       CalcCRC16((uint8_t*)active_addr, param.app_size) == (uint16_t)param.app_crc)
@@ -178,11 +180,9 @@ loop_YM_ReceiveAndFlash:
       }
     }else if(ret == YM_RETURN_CODE_EOT)
     {
-
       uint32_t fw_bin_size = 0;
-      #if(configUSE_FOOTER)
-
       FW_SignInfo_t sign_info;
+      #if(configUSE_FOOTER)
       /* 1. 解析 Footer + 签名校验 */
       int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, ym_ctx.file_size,
                                                &sign_info, &fw_bin_size);
@@ -202,7 +202,8 @@ loop_YM_ReceiveAndFlash:
       }
 
       #else
-        fw_bin_size = ym_ctx.file_size
+        fw_bin_size = ym_ctx.file_size;
+        sign_info.version = 0xFFFFFFFF;
       #endif
 
       /* 3. CRC 校验（仅固件本体，不含 Footer） */
@@ -217,7 +218,7 @@ loop_YM_ReceiveAndFlash:
       bootOTA_SaveParamOTA(&ota_ctx, &new_param);
 
       param.active_partition = new_param.active_partition;
-      param.current_version  = sign_info.version;
+      param.current_version  = new_param.current_version;
       goto Jump;
     }else
     {
