@@ -3,6 +3,24 @@
 
 #if(!(configUSE_CUSTOM_FLASH))
 
+/* flash操作请参考 ST官方参考手册 */
+/**附：STM32F411 flash控制寄存器(FLAHS_CR) 位定义
+ *
+ * PG：使能flash编程
+ * SER：使能flash擦除
+ * MER：使能所有扇区擦除
+ * SNB：扇区号
+ * PSIZE：擦除单位：8位、16位、32位、64位
+ * STRT：置1开始擦除
+ * EOPIE：操作结束中断使能
+ * ERRIE：错误中断使能
+ * LOCK：只能写入1，以锁定flash，由硬件清零
+ *
+ * 更多信息请参考ST官方参考手册
+ *
+ */
+
+
 #include "stm32f4xx.h"
 
 #define FLASH_KEY1  0x45670123U
@@ -78,10 +96,10 @@ int8_t bootFlasher_EraseSectors(int sector, int sector_number)
         int current_sector = sector + i;
 
         /* 配置扇区擦除：SER + SNB + PSIZE(x16) + 启动 */
-        FLASH->CR &= ~(FLASH_CR_SNB | FLASH_CR_PSIZE);
+        FLASH->CR &= ~(FLASH_CR_SNB | FLASH_CR_PSIZE);  //清除SNB和PSIZE寄存器
         FLASH->CR |= FLASH_CR_SER
                   |  (current_sector << FLASH_CR_SNB_Pos)
-                  |  FLASH_CR_PSIZE_1;
+                  |  FLASH_CR_PSIZE_1;                  // 重新写入SNB和PSIZE
 
         FLASH->CR |= FLASH_CR_STRT;
 
