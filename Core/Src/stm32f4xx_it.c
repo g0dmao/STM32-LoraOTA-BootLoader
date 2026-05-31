@@ -52,7 +52,8 @@
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-extern volatile uint32_t g_sys_tick;
+/* 全局 tick 计数器，在 SysTick_Handler 中递增，替代 HAL_GetTick */
+volatile uint32_t g_sys_tick;
 
 /* USER CODE END 0 */
 

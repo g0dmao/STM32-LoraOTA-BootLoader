@@ -4,9 +4,6 @@
 #if(configUART)
 #include "main.h"
 
-/* 全局 tick 计数器，在 SysTick_Handler 中递增，替代 HAL_GetTick */
-volatile uint32_t g_sys_tick = 0;
-
 /* DMA 硬件直接写入的物理缓冲区 */
 uint8_t rx_buffer[configRX_BUF_SIZE] = {0};
 
