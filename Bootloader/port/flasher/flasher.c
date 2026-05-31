@@ -3,77 +3,137 @@
 
 #if(!(configUSE_CUSTOM_FLASH))
 
-#include "main.h"
+#include "stm32f4xx.h"
+
+#define FLASH_KEY1  0x45670123U
+#define FLASH_KEY2  0xCDEF89ABU
+
+/* ---- 静态辅助函数 ---- */
 
 /**
- * @brief  擦除 App 所在的 Flash 扇区 (Sector 3, 4, 5)
+ * @brief  解锁 Flash 控制寄存器
+ */
+static void flash_unlock(void)
+{
+    FLASH->KEYR = FLASH_KEY1;
+    FLASH->KEYR = FLASH_KEY2;
+}
+
+/**
+ * @brief  上锁 Flash 控制寄存器
+ */
+static void flash_lock(void)
+{
+    FLASH->CR |= FLASH_CR_LOCK;
+}
+
+/**
+ * @brief  清除 Flash 状态寄存器全部错误/完成标志（写 1 清零）
+ */
+static void flash_clear_flags(void)
+{
+    FLASH->SR = (FLASH_SR_EOP   | FLASH_SR_OPERR  | FLASH_SR_WRPERR |
+                 FLASH_SR_PGAERR | FLASH_SR_PGPERR | FLASH_SR_PGSERR |
+                 FLASH_SR_RDERR);
+}
+
+/**
+ * @brief  等待 Flash 忙标志清除，并检查错误标志
+ * @retval 0: 成功; -1: 出错
+ */
+static int8_t flash_wait_done(void)
+{
+    while (FLASH->SR & FLASH_SR_BSY);
+
+    if (FLASH->SR & (FLASH_SR_WRPERR | FLASH_SR_PGAERR |
+                     FLASH_SR_PGPERR | FLASH_SR_PGSERR))
+    {
+        return -1;
+    }
+
+    if (FLASH->SR & FLASH_SR_EOP)
+    {
+        FLASH->SR = FLASH_SR_EOP;  /* 写 1 清零 */
+    }
+
+    return 0;
+}
+
+
+/* ---- 对外接口 ---- */
+
+/**
+ * @brief  擦除 App 所在的 Flash 扇区
+ * @param  sector:        起始扇区号 (0-11)
+ * @param  sector_number: 连续擦除的扇区个数
  * @retval 0: 成功; -1: 失败
  */
 int8_t bootFlasher_EraseSectors(int sector, int sector_number)
 {
-    FLASH_EraseInitTypeDef EraseInitStruct;
-    uint32_t SectorError = 0;
+    flash_unlock();
+    flash_clear_flags();
 
-    // 1. 解锁 Flash 控制寄存器
-    HAL_FLASH_Unlock();
-
-    // 2. 清除可能存在的错误标志位
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
-                           FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
-
-    // 3. 配置擦除参数
-    EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
-    EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3; // 2.7V - 3.6V 电压范围
-    EraseInitStruct.Sector        = sector;        // 从 Sector 3 开始
-    EraseInitStruct.NbSectors     = sector_number;                     // 一共擦除 3 个扇区 (3, 4, 5)
-
-    // 4. 执行擦除
-    if (HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) != HAL_OK)
+    for (int i = 0; i < sector_number; i++)
     {
-        HAL_FLASH_Lock();
-        return -1; // 擦除失败
+        int current_sector = sector + i;
+
+        /* 配置扇区擦除：SER + SNB + PSIZE(x16) + 启动 */
+        FLASH->CR &= ~(FLASH_CR_SNB | FLASH_CR_PSIZE);
+        FLASH->CR |= FLASH_CR_SER
+                  |  (current_sector << FLASH_CR_SNB_Pos)
+                  |  FLASH_CR_PSIZE_1;
+
+        FLASH->CR |= FLASH_CR_STRT;
+
+        if (flash_wait_done() != 0)
+        {
+            FLASH->CR &= ~FLASH_CR_SER;
+            flash_lock();
+            return -1;
+        }
     }
 
-    // 5. 上锁
-    HAL_FLASH_Lock();
+    FLASH->CR &= ~FLASH_CR_SER;
+    flash_lock();
     return 0;
 }
 
 
-
 /**
- * @brief  向目标 Flash 地址写入连续数据
- * @param  address: 写入起始物理地址 (例如 0x0800C000)
- * @param  data: 数据缓冲区指针
- * @param  length: 写入字节数
+ * @brief  向目标 Flash 地址写入连续数据（逐字节写入）
+ * @param  address: 写入起始物理地址
+ * @param  data:    数据缓冲区指针
+ * @param  length:  写入字节数
  * @retval 0: 成功; -1: 失败
  */
 int8_t bootFlasher_WriteByte(uint32_t address, uint8_t *data, uint16_t length)
 {
-    HAL_FLASH_Unlock();
+    flash_unlock();
+    flash_clear_flags();
 
-    // 清除标志位，防止被上一次操作的历史错误影响
-    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR |
-                           FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR);
+    /* 启用编程模式，PSIZE 保持默认 00 = x8 (byte) */
+    FLASH->CR |= FLASH_CR_PG;
 
-    for(uint16_t i = 0; i < length; i++)
+    for (uint16_t i = 0; i < length; i++)
     {
-        // 逐字节烧写
-        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, address + i, data[i]) != HAL_OK)
+        *(__IO uint8_t *)(address + i) = data[i];
+
+        if (flash_wait_done() != 0)
         {
-            HAL_FLASH_Lock();
-            return -1; // 写入出错
+            FLASH->CR &= ~FLASH_CR_PG;
+            flash_lock();
+            return -1;
         }
     }
 
-    HAL_FLASH_Lock();
+    FLASH->CR &= ~FLASH_CR_PG;
+    flash_lock();
     return 0;
 }
 
 
-
 /**
- * @brief 从 Sector 读取参数
+ * @brief 从 Flash 地址读取数据（Flash 内存映射，直接 memcpy）
  */
 int8_t bootFlasher_ReadData(uint32_t address, uint8_t *data, uint16_t length)
 {
@@ -82,5 +142,3 @@ int8_t bootFlasher_ReadData(uint32_t address, uint8_t *data, uint16_t length)
 }
 
 #endif
-
-

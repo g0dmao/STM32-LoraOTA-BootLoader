@@ -14,10 +14,6 @@ typedef struct OTA_Param{
 } OTA_Param_t;
 
 typedef struct OTA_Context{
-    uint32_t param_address;      // 参数区地址
-    uint32_t param_sector;      // 参数区所在的扇区号
-    uint32_t param_sector_num;  // 扇区数
-
     // 底层驱动注册
     int8_t (*write_cb)(uint32_t address, uint8_t *data, uint16_t length);
     int8_t (*read_cb)(uint32_t address, uint8_t *data, uint16_t length);

@@ -23,6 +23,7 @@ static int8_t ed25519_verify(const uint8_t *signature, const uint8_t *pubkey,
      */
     return -1;
 #else
+    // 消除变量未使用警告
     (void)signature;
     (void)pubkey;
     (void)msg;
