@@ -30,7 +30,7 @@
 // --- OTA 参数区 ---
 #define configPARAM_ADDRESS        0x08008000
 #define configPARAM_SECTOR         2
-#define configPARAM_SECTOR_NUMBER  1
+#define configPARAM_SECTOR_NUM     1
 #define configOTA_VALID_MAGIC      0x55AA55AA
 
 
