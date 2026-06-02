@@ -52,6 +52,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/port/uart/uart_dma_ring.c
     Bootloader/port/flasher/flasher.c
     Bootloader/hydrogen.c
+    Bootloader/bootloader_menu.c
 )
 
 # Add include paths

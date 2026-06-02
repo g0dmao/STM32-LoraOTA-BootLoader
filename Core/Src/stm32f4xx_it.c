@@ -188,6 +188,7 @@ void SysTick_Handler(void)
   /* USER CODE BEGIN SysTick_IRQn 0 */
   g_sys_tick++;
   /* USER CODE END SysTick_IRQn 0 */
+
   /* USER CODE BEGIN SysTick_IRQn 1 */
 
   /* USER CODE END SysTick_IRQn 1 */
@@ -211,7 +212,6 @@ void USART1_IRQHandler(void)
     LL_USART_ClearFlag_IDLE(USART1);
   }
   /* USER CODE END USART1_IRQn 0 */
-
   /* USER CODE BEGIN USART1_IRQn 1 */
 
   /* USER CODE END USART1_IRQn 1 */

@@ -32,6 +32,7 @@
 #include "flasher.h"
 #include "ota.h"
 #include "sign_verify.h"
+#include "bootloader_menu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,7 +66,8 @@ extern volatile uint32_t g_sys_tick;
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void CloseAllPeripheral(void);
-void BootloaderInit(void);
+static void BootloaderInit(void);
+static uint32_t GetTick(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -111,7 +113,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   BootloaderInit();
-  printf("------ welcome to GoDm@Bootloader! ------\r\n");
+  BootMenu_PrintBanner();
 
   OTA_Param_t param;
   uint32_t write_offset = 0;
@@ -120,29 +122,51 @@ int main(void)
 
 
 /*-----------------------------------------------*/
-// 开机校验：读取 OTA 参数，校验活跃分区 CRC
+// 进入OTA下载的触发逻辑
 
-  if (bootOTA_ReadParamOTA(&ota_ctx, &param) != 0)
+  uint32_t start_time = GetTick();
+  for (;;)
   {
-    goto err;
-  }
+      BootMenu_Action_t action = BootMenu_Poll(GetTick() - start_time);
 
-  uint32_t active_addr = bootOTA_GetActivePartitionAddr(&param);
-
-  // 调试用，直接跳到下载循环
-  goto loop_YM_ConnectAndErase;
-
-  if (param.magic_flag == configOTA_VALID_MAGIC &&
-      CalcCRC16((uint8_t*)active_addr, param.app_size) == (uint16_t)param.app_crc)
-  {
-    goto Jump;
+      if (action == BOOTMENU_ACTION_ENTER_OTA)
+      {
+          goto loop_OTA_ConnectAndErase;
+      }
+      if (action == BOOTMENU_ACTION_JUMP_APP)
+      {
+          goto Check;
+      }
+      if (action == BOOTMENU_ACTION_ENTER_MENU)
+      {
+          goto InteractiveMenu;
+      }
   }
 /*-----------------------------------------------*/
 
 
-loop_YM_ConnectAndErase:
+InteractiveMenu:
 /*-----------------------------------------------*/
-// loop_YM_ConnectAndErase:
+// InteractiveMenu: 交互菜单模式
+  {
+      BootMenu_Action_t action = BootMenu_Interactive();
+
+      if (action == BOOTMENU_ACTION_JUMP_APP)
+      {
+          goto Check;
+      }
+      if (action == BOOTMENU_ACTION_ENTER_OTA)
+      {
+          goto loop_OTA_ConnectAndErase;
+      }
+      goto err;
+  }
+/*-----------------------------------------------*/
+
+
+loop_OTA_ConnectAndErase:
+/*-----------------------------------------------*/
+// loop_OTA_ConnectAndErase:
 // 尝试与 Ymodem 上位机建立连接，一旦连接成功，擦除【非活跃】分区
 
   for(;;)
@@ -156,15 +180,15 @@ loop_YM_ConnectAndErase:
         goto err;
       }
       write_addr = bootOTA_GetInactivePartitionAddr(&param);
-      goto loop_YM_ReceiveAndFlash;
+      goto loop_OTA_ReceiveAndFlash;
     }
   }
 /*-----------------------------------------------*/
 
 
-loop_YM_ReceiveAndFlash:
+loop_OTA_ReceiveAndFlash:
 /*-----------------------------------------------*/
-// loop_YM_ReceiveAndFlash: 接收 Ymodem 数据包并写入【非活跃】分区
+// loop_OTA_ReceiveAndFlash: 接收 Ymodem 数据包并写入【非活跃】分区
 
   for(;;)
   {
@@ -231,18 +255,30 @@ loop_YM_ReceiveAndFlash:
 /*-----------------------------------------------*/
 
 
+Check:
+/*-----------------------------------------------*/
+// 开机校验：读取 OTA 参数，校验活跃分区 CRC
+
+  if (bootOTA_ReadParamOTA(&ota_ctx, &param) != 0)
+  {
+    goto err;
+  }
+
+  uint32_t active_addr = bootOTA_GetActivePartitionAddr(&param);
+
+  if (param.magic_flag == configOTA_VALID_MAGIC &&
+      CalcCRC16((uint8_t*)active_addr, param.app_size) == (uint16_t)param.app_crc)
+  {
+    goto Jump;
+  }
+/*-----------------------------------------------*/
+
+
 Jump:
 /*-----------------------------------------------*/
 // Jump: 跳转到活跃分区 App
 
-  int i = 3;
-  while(i)
-  {
-    printf("jump after %d seconds\r\n", i);
-    i--;
-    LL_mDelay(1000);
-  }
-  printf("Byebye:)\r\n");
+  printf("Ahh~I'm dead...~_~\r\n");
   Bootloader_JumpToApp(bootOTA_GetActivePartitionAddr(&param));
 /*-----------------------------------------------*/
 
@@ -346,7 +382,7 @@ static uint32_t GetTick(void)
   return g_sys_tick;
 }
 
-void BootloaderInit(void)
+static void BootloaderInit(void)
 {
   ym_ctx.read_byte_cb = bootUART_ReadByte;
   ym_ctx.send_byte_cb = bootUART_SendByte;
