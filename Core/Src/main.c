@@ -334,7 +334,11 @@ int _write(int file, char *ptr, int len)
 
 void CloseAllPeripheral(void)
 {
+
   LL_USART_DeInit(USART1);
+  LL_DMA_DeInit(DMA2,LL_DMA_STREAM_2);
+  LL_GPIO_DeInit(GPIOA);
+
 }
 
 static uint32_t GetTick(void)
