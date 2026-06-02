@@ -1,6 +1,7 @@
 
 #include "sign_verify.h"
 #include "configBootloader.h"
+#include "hydrogen.h"
 #include <string.h>
 
 #if(configUSE_FOOTER)
@@ -9,12 +10,13 @@
 static const uint8_t ed25519_pubkey[32] = configED25519_PUBKEY;
 
 /**
- * @brief Ed25519 签名校验 — 桩函数
+ * @brief 签名验证函数
  *
- * 当前为占位实现。启用签名校验后需替换为实际 Ed25519 库
- * （如 libhydrogen 的 hydro_sign_verify 或 tweetnacl-embedded）。
- *
- * @return 0 = 校验通过, -1 = 校验失败
+ * @param signature 输入-数字签名
+ * @param pubkey    输入-公匙
+ * @param msg       输入-原始数据地址
+ * @param msg_len   输入-原始数据长度
+ * @return int8_t
  */
 static int8_t ed25519_verify(const uint8_t *signature, const uint8_t *pubkey,
                               const uint8_t *msg, uint32_t msg_len)
@@ -24,7 +26,10 @@ static int8_t ed25519_verify(const uint8_t *signature, const uint8_t *pubkey,
      * TODO: 替换为实际 Ed25519 实现
      *   例: return hydro_sign_verify(signature, msg, msg_len, "ctx", pubkey);
      */
-    return -1;
+    // 根据hydro文档，“a context is a 8 characters string”，所以ctx必须为8个（及以上？？没试过）字符（含‘\0’）
+    // 上位机签名工具中也必须使用完全相同的 8 字节字符串
+
+    return hydro_sign_verify(signature, msg, msg_len, "114_514", pubkey);
 #else
     // 消除变量未使用警告
     (void)signature;
