@@ -182,25 +182,27 @@ loop_YM_ReceiveAndFlash:
     {
       uint32_t fw_bin_size = 0;
       FW_SignInfo_t sign_info;
+
       #if(configUSE_FOOTER)
-      /* 1. 解析 Footer + 签名校验 */
-      int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, ym_ctx.file_size,
-                                               &sign_info, &fw_bin_size);
-      if (sig_ret != 0)
-      {
-        printf("SIG_ERR: %d\r\n", sig_ret);
-        bootYM_Abort(&ym_ctx);
-        goto err;
-      }
+        /* 1. 解析 Footer + 签名校验 */
+        int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, ym_ctx.file_size,
+                                                &sign_info, &fw_bin_size);
+        if (sig_ret != 0)
+        {
+          printf("SIG_ERR: %d\r\n", sig_ret);
+          bootYM_Abort(&ym_ctx);
+          goto err;
+        }
 
-      /* 2. 防回滚检查：新版本号必须 >= 当前版本号 */
-      if (sign_info.version < param.current_version)
-      {
-        printf("ROLLBACK: v%lu < v%lu\r\n", sign_info.version, param.current_version);
-        bootYM_Abort(&ym_ctx);
-        goto err;
-      }
-
+        #if(!configROLLBACK_ENABLE)
+          /* 2. 防回滚检查：新版本号必须 >= 当前版本号 */
+          if (sign_info.version < param.current_version)
+          {
+            printf("ROLLBACK: v%lu < v%lu\r\n", sign_info.version, param.current_version);
+            bootYM_Abort(&ym_ctx);
+            goto err;
+          }
+        #endif
       #else
         fw_bin_size = ym_ctx.file_size;
         sign_info.version = 0xFFFFFFFF;

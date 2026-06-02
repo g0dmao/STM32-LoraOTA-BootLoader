@@ -52,6 +52,9 @@
 // 签名校验开关：1 = 强制验签，0 = 跳过（调试用）
 #define configSIG_VERIFY_ENABLE    Yes
 
+// 防回滚开关：1 = 启动防回滚校验，0 = 跳过（调试用）
+#define configROLLBACK_ENABLE      Yes
+
 // Ed25519 公钥（32 字节），由上位机签名工具生成
 // TODO: 替换为实际公钥
 #define configED25519_PUBKEY  { \
