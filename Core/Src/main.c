@@ -196,8 +196,8 @@ loop_OTA_ConnectAndErase:
         if (is_patch_mode)
         {
             /* 差量包：擦除 Sector 4（补丁暂存区） */
-            if (bootFlasher_EraseSectors(configPATCH_STORAGE_SECTOR,
-                                          configPATCH_STORAGE_SECTOR_NUM) != 0)
+            if (g_ota_ctx.erase_cb(configPATCH_STORAGE_SECTOR,
+                                    configPATCH_STORAGE_SECTOR_NUM) != 0)
             {
                 bootYM_Abort(&g_ym_ctx);
                 goto err;
@@ -260,10 +260,10 @@ loop_OTA_ReceiveAndFlash:
                 goto err;
             }
 
-            bootFlasher_Unlock();
+            g_ota_ctx.unlock_cb();
             int8_t pr = DiffUpdate_ApplyPatch(src_addr, dst_addr,
                                               g_ym_ctx.file_size, &fw_bin_size);
-            bootFlasher_Lock();
+            g_ota_ctx.lock_cb();
 
             if (pr != 0)
             {
@@ -464,9 +464,11 @@ static void BootloaderInit(void)
   g_ym_ctx.send_byte_cb = bootUART_SendByte;
   g_ym_ctx.get_tick_cb  = GetTick;
 
-  g_ota_ctx.read_cb = bootFlasher_ReadData;
-  g_ota_ctx.write_cb = bootFlasher_WriteByte;
-  g_ota_ctx.erase_cb = bootFlasher_EraseSectors;
+  g_ota_ctx.read_cb   = bootFlasher_ReadData;
+  g_ota_ctx.write_cb  = bootFlasher_WriteByte;
+  g_ota_ctx.erase_cb  = bootFlasher_EraseSectors;
+  g_ota_ctx.unlock_cb = bootFlasher_Unlock;
+  g_ota_ctx.lock_cb   = bootFlasher_Lock;
 
   // 初始化用于上位机传输文件的串口，而不是打印调试信息的串口
   bootUART_RegisterTransmitPort();

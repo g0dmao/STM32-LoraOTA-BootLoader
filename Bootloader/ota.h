@@ -18,6 +18,8 @@ typedef struct OTA_Context{
     int8_t (*write_cb)(uint32_t address, uint8_t *data, uint16_t length);
     int8_t (*read_cb)(uint32_t address, uint8_t *data, uint16_t length);
     int8_t (*erase_cb)(int sector, int sector_number);
+    void   (*unlock_cb)(void);
+    void   (*lock_cb)(void);
 } OTA_Context_t;
 
 /**

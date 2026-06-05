@@ -162,10 +162,8 @@ static void PrintSeparator_(char ch, int len)
  */
 static void PrintOTAParams_(void)
 {
-    OTA_Context_t ctx;
+    OTA_Context_t ctx = {0};
     ctx.read_cb  = bootFlasher_ReadData;
-    ctx.write_cb = NULL;
-    ctx.erase_cb = NULL;
 
     OTA_Param_t param;
     if (bootOTA_ReadParamOTA(&ctx, &param) != 0)
