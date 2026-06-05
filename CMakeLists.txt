@@ -53,6 +53,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/port/flasher/flasher.c
     Bootloader/hydrogen.c
     Bootloader/bootloader_menu.c
+    Bootloader/port/janpatch/janpatch.c
+    Bootloader/diff_update.c
 )
 
 # Add include paths

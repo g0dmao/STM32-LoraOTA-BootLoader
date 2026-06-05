@@ -26,24 +26,26 @@
 #define FLASH_KEY1  0x45670123U
 #define FLASH_KEY2  0xCDEF89ABU
 
-/* ---- 静态辅助函数 ---- */
+/* ---- 对外接口：解锁 / 上锁 ---- */
 
 /**
- * @brief  解锁 Flash 控制寄存器
+ * @brief  解锁 Flash 控制寄存器（KEYR 序列）
  */
-static void flash_unlock(void)
+void bootFlasher_Unlock(void)
 {
     FLASH->KEYR = FLASH_KEY1;
     FLASH->KEYR = FLASH_KEY2;
 }
 
 /**
- * @brief  上锁 Flash 控制寄存器
+ * @brief  上锁 Flash 控制寄存器（CR.LOCK = 1）
  */
-static void flash_lock(void)
+void bootFlasher_Lock(void)
 {
     FLASH->CR |= FLASH_CR_LOCK;
 }
+
+/* ---- 静态辅助函数 ---- */
 
 /**
  * @brief  清除 Flash 状态寄存器全部错误/完成标志（写 1 清零）
@@ -82,56 +84,58 @@ static int8_t flash_wait_done(void)
 
 /**
  * @brief  擦除 App 所在的 Flash 扇区
- * @param  sector:        起始扇区号 (0-11)
- * @param  sector_number: 连续擦除的扇区个数
- * @retval 0: 成功; -1: 失败
  */
 int8_t bootFlasher_EraseSectors(int sector, int sector_number)
 {
-    flash_unlock();
+    bootFlasher_Unlock();
     flash_clear_flags();
 
     for (int i = 0; i < sector_number; i++)
     {
         int current_sector = sector + i;
 
-        /* 配置扇区擦除：SER + SNB + PSIZE(x16) + 启动 */
-        FLASH->CR &= ~(FLASH_CR_SNB | FLASH_CR_PSIZE);  //清除SNB和PSIZE寄存器
+        FLASH->CR &= ~(FLASH_CR_SNB | FLASH_CR_PSIZE);
         FLASH->CR |= FLASH_CR_SER
                   |  (current_sector << FLASH_CR_SNB_Pos)
-                  |  FLASH_CR_PSIZE_1;                  // 重新写入SNB和PSIZE
+                  |  FLASH_CR_PSIZE_1;
 
         FLASH->CR |= FLASH_CR_STRT;
 
         if (flash_wait_done() != 0)
         {
             FLASH->CR &= ~FLASH_CR_SER;
-            flash_lock();
+            bootFlasher_Lock();
             return -1;
         }
     }
 
     FLASH->CR &= ~FLASH_CR_SER;
-    flash_lock();
+    bootFlasher_Lock();
     return 0;
 }
 
 
 /**
- * @brief  向目标 Flash 地址写入连续数据（逐字节写入）
- * @param  address: 写入起始物理地址
- * @param  data:    数据缓冲区指针
- * @param  length:  写入字节数
- * @retval 0: 成功; -1: 失败
+ * @brief  向目标 Flash 地址写入连续数据（便捷封装，内部自动解锁/上锁）
  */
 int8_t bootFlasher_WriteByte(uint32_t address, uint8_t *data, uint16_t length)
 {
-    flash_unlock();
+    bootFlasher_Unlock();
+    int8_t ret = bootFlasher_Write(address, data, length);
+    bootFlasher_Lock();
+    return ret;
+}
+
+
+/**
+ * @brief  向目标 Flash 地址写入连续数据（不含解锁/上锁，需外部管理）
+ */
+int8_t bootFlasher_Write(uint32_t address, uint8_t *data, uint16_t length)
+{
     flash_clear_flags();
 
-    /* 启用编程模式，PSIZE = 00 = x8 (byte)，与逐字节写入匹配 */
-    FLASH->CR &= ~FLASH_CR_PSIZE;  // PSIZE 清零 → x8
-
+    /* 启用编程模式，PSIZE = 00 = x8 (byte) */
+    FLASH->CR &= ~FLASH_CR_PSIZE;
     FLASH->CR |= FLASH_CR_PG;
 
     for (uint16_t i = 0; i < length; i++)
@@ -141,13 +145,11 @@ int8_t bootFlasher_WriteByte(uint32_t address, uint8_t *data, uint16_t length)
         if (flash_wait_done() != 0)
         {
             FLASH->CR &= ~FLASH_CR_PG;
-            flash_lock();
             return -1;
         }
     }
 
     FLASH->CR &= ~FLASH_CR_PG;
-    flash_lock();
     return 0;
 }
 

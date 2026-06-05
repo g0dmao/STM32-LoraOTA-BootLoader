@@ -9,29 +9,42 @@
 // ============================================================
 // BootLoader:   Sector 0-1   (32KB, 0x08000000)
 // OTA Params:   Sector 2     (16KB, 0x08008000)
-// Partition A:  Sector 3-4   (80KB, 0x0800C000)  默认 / 出厂分区
-// Partition B:  Sector 5     (128KB,0x08020000)  仅前 80KB 有效
-// Reserved:     Sector 6-7   (256KB,0x08040000)  预留
+// Free:         Sector 3     (16KB, 0x0800C000)  预留扩展
+// Patch Store:  Sector 4     (64KB, 0x08010000)  补丁暂存区
+// Partition B:  Sector 5     (128KB,0x08020000)  App 分区 B
+// Partition A:  Sector 6     (128KB,0x08040000)  默认 / 出厂分区
+// Reserved:     Sector 7     (128KB,0x08060000)  预留
 // ============================================================
 
 // --- Partition A ---
-#define configPART_A_ADDRESS       0x0800C000
-#define configPART_A_SECTOR        3
-#define configPART_A_SECTOR_NUM    2     // Sectors 3+4 (16KB+64KB)
+#define configPART_A_ADDRESS       0x08040000
+#define configPART_A_SECTOR        6
+#define configPART_A_SECTOR_NUM    1     // Sector 6 (128KB)
 
 // --- Partition B ---
 #define configPART_B_ADDRESS       0x08020000
 #define configPART_B_SECTOR        5
-#define configPART_B_SECTOR_NUM    1     // Sector 5 (128KB, 仅前 80KB 用于 App)
+#define configPART_B_SECTOR_NUM    1     // Sector 5 (128KB)
 
 // --- App 固件大小约束 ---
-#define configAPP_MAX_SIZE         (80 * 1024)
+#define configAPP_MAX_SIZE         (128 * 1024)
 
 // --- OTA 参数区 ---
 #define configPARAM_ADDRESS        0x08008000
 #define configPARAM_SECTOR         2
 #define configPARAM_SECTOR_NUM     1
 #define configOTA_VALID_MAGIC      0x55AA55AA
+
+// --- Patch 暂存区 ---
+#define configPATCH_STORAGE_ADDRESS    0x08010000
+#define configPATCH_STORAGE_SECTOR     4
+#define configPATCH_STORAGE_SECTOR_NUM 1
+#define configPATCH_MAX_SIZE           (64 * 1024)
+
+// --- JANPatch 页缓冲区大小 ---
+#define configJP_SOURCE_PAGE_SIZE      4096
+#define configJP_PATCH_PAGE_SIZE       4096
+#define configJP_TARGET_PAGE_SIZE      4096
 
 
 #define configUART         Yes

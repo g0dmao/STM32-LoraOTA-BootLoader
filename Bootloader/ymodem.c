@@ -182,13 +182,22 @@ int8_t bootYM_EstablishConnection(YM_InfoBlock_t *ym)
             uint16_t name_len = 0;
 
             // 寻找 '\0' 且带有边界保护
-            while(name_len < ym->packet_len && ym->packet_data[name_len] != '\0')
+            while (name_len < ym->packet_len && ym->packet_data[name_len] != '\0')
             {
                 name_len++;
             }
 
+            // 提取文件名（截断到缓冲区大小）
+            uint16_t copy_len = (name_len < YM_FILE_NAME_MAX_LEN - 1)
+                                ? name_len : (YM_FILE_NAME_MAX_LEN - 1);
+            for (uint16_t j = 0; j < copy_len; j++)
+            {
+                ym->file_name[j] = (char)ym->packet_data[j];
+            }
+            ym->file_name[copy_len] = '\0';
+
             // 确保找到了 '\0' 且后面还有空间存放文件大小字符
-            if(name_len < (ym->packet_len - 1))
+            if (name_len < (ym->packet_len - 1))
             {
                 // 指针指向文件大小的首地址
                 uint8_t *size_str = ym->packet_data + name_len + 1;

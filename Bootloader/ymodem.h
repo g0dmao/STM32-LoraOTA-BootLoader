@@ -20,6 +20,7 @@
 #define YM_RETURN_CODE_ERROR_DATA           -4
 #define YM_RETURN_CODE_EOT                  1
 
+#define YM_FILE_NAME_MAX_LEN                64
 
 /*
     return：返回读出的数据字节大小。由于是单字节读取，成功则返回1，否则返回0
@@ -38,6 +39,7 @@ typedef struct YM_InfoBlock {
     uint16_t packet_len;                // 包实际长度 128/1024
     uint32_t file_size;                 // 传入的文件大小
     uint32_t total_receive_byte;        // 截至目前总接收字节数
+    char     file_name[YM_FILE_NAME_MAX_LEN];  // 文件名（来自第 0 包）
 
     YM_ReadByteFuc_t read_byte_cb;
     YM_SendByteFuc_t send_byte_cb;
