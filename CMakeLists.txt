@@ -50,7 +50,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/ota.c
     Bootloader/sign_verify.c
     Bootloader/diff_update.c
-    Bootloader/bootloader_menu.c
+    Bootloader/port/menu/bootloader_menu.c
     Bootloader/port/uart/uart_dma_ring.c
     Bootloader/port/flasher/flasher.c
     Bootloader/port/janpatch/janpatch_port.c
@@ -65,6 +65,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/port/flasher
     Bootloader/port/uart
     Bootloader/port/janpatch
+    Bootloader/port/menu
     Bootloader/lib/hydrogen
     Bootloader/lib/hydrogen/impl
     Bootloader/lib/hydrogen/impl/gimli-core
