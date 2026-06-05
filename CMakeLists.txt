@@ -49,12 +49,13 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/ymodem.c
     Bootloader/ota.c
     Bootloader/sign_verify.c
+    Bootloader/diff_update.c
+    Bootloader/bootloader_menu.c
     Bootloader/port/uart/uart_dma_ring.c
     Bootloader/port/flasher/flasher.c
-    Bootloader/hydrogen.c
-    Bootloader/bootloader_menu.c
-    Bootloader/port/janpatch/janpatch.c
-    Bootloader/diff_update.c
+    Bootloader/port/janpatch/janpatch_port.c
+    Bootloader/lib/hydrogen/hydrogen.c
+
 )
 
 # Add include paths
@@ -63,9 +64,12 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader
     Bootloader/port/flasher
     Bootloader/port/uart
-    Bootloader/impl
-    Bootloader/impl/gimli-core
-    Bootloader/impl/random
+    Bootloader/port/janpatch
+    Bootloader/lib/hydrogen
+    Bootloader/lib/hydrogen/impl
+    Bootloader/lib/hydrogen/impl/gimli-core
+    Bootloader/lib/hydrogen/impl/random
+    Bootloader/lib/janpatch
 
 )
 
