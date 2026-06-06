@@ -147,7 +147,8 @@ int JanPatch_Apply(FlashStream_t *source,
 
     if (ret == 0 && fw_size_out != NULL)
     {
-        *fw_size_out = ctx.target_buffer.position;
+        /* 返回总字节数。 */
+        *fw_size_out = target->current_offset;
     }
 
     return ret;
