@@ -16,9 +16,9 @@
  * @param  fw_size_out   输出：生成的新固件总大小（含 Footer）
  * @return 0=成功, -1=janpatch错误
  */
-int8_t DiffUpdate_ApplyPatch(uint32_t source_addr,
-                             uint32_t target_addr,
-                             uint32_t patch_size,
-                             uint32_t *fw_size_out);
+int8_t bootDiff_ApplyPatch(uint32_t source_addr,
+                           uint32_t target_addr,
+                           uint32_t patch_size,
+                           uint32_t *fw_size_out);
 
 #endif

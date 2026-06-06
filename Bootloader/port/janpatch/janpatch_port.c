@@ -129,12 +129,15 @@ static void JanPatch_Init_(janpatch_ctx *ctx,
     ctx->max_file_size = 0;
 }
 
-/* ---- 公共函数 ---- */
-
 /**
  * @brief  应用 JANPatch 补丁：source + patch → target
+ * @param  source       源固件 FlashStream（活跃分区，只读）
+ * @param  patch        补丁 FlashStream（Sector 4，只读）
+ * @param  target       目标固件 FlashStream（非活跃分区，已擦除，写入）
+ * @param  fw_size_out  输出：生成的新固件总大小（含 Footer），可为 NULL
+ * @return 0=成功, 非0=janpatch 错误码
  */
-int JanPatch_Apply(FlashStream_t *source,
+static int JanPatch_Apply_(FlashStream_t *source,
                    FlashStream_t *patch,
                    FlashStream_t *target,
                    uint32_t *fw_size_out)
@@ -152,4 +155,46 @@ int JanPatch_Apply(FlashStream_t *source,
     }
 
     return ret;
+}
+
+
+/* ---- 公共函数 ---- */
+
+int8_t JanPatch_ApplyPatch(uint32_t source_addr,
+                             uint32_t target_addr,
+                             uint32_t patch_size,
+                             uint32_t *fw_size_out)
+{
+    FlashStream_t source_stream = {
+        .start_address  = source_addr,
+        .current_offset = 0,
+        .max_size       = configAPP_MAX_SIZE
+    };
+
+    FlashStream_t patch_stream = {
+        .start_address  = configPATCH_STORAGE_ADDRESS,
+        .current_offset = 0,
+        .max_size       = patch_size
+    };
+
+    FlashStream_t target_stream = {
+        .start_address  = target_addr,
+        .current_offset = 0,
+        .max_size       = configAPP_MAX_SIZE
+    };
+
+    int ret = JanPatch_Apply_(&source_stream, &patch_stream, &target_stream,
+                             fw_size_out);
+    if (ret != 0)
+    {
+        printf("DIFF_ERR: janpatch returned %d\r\n", ret);
+        printf("  source=%lu patch=%lu target=%lu\r\n",
+               (unsigned long)source_stream.current_offset,
+               (unsigned long)patch_stream.current_offset,
+               (unsigned long)target_stream.current_offset);
+        return -1;
+    }
+
+
+    return 0;
 }

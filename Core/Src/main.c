@@ -262,7 +262,7 @@ loop_OTA_ReceiveAndFlash:
             }
 
             g_ota_ctx.unlock_cb();
-            int8_t ret = DiffUpdate_ApplyPatch(src_addr, dst_addr,
+            int8_t ret = bootDiff_ApplyPatch(src_addr, dst_addr,
                                               g_ym_ctx.file_size, &fw_total_size);
             g_ota_ctx.lock_cb();
 

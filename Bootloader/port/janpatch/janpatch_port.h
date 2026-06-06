@@ -23,16 +23,21 @@ typedef struct FlashStream
 #define JANPATCH_STREAM FlashStream_t
 
 /**
- * @brief  应用 JANPatch 补丁：source + patch → target
- * @param  source       源固件 FlashStream（活跃分区，只读）
- * @param  patch        补丁 FlashStream（Sector 4，只读）
- * @param  target       目标固件 FlashStream（非活跃分区，已擦除，写入）
- * @param  fw_size_out  输出：生成的新固件总大小（含 Footer），可为 NULL
- * @return 0=成功, 非0=janpatch 错误码
+ * @brief  将 Sector 4 中的补丁应用到源固件，生成新固件到目标分区
+ *
+ * @note   调用前需确保：
+ *         1. 补丁文件已通过 Ymodem 接收完毕并写入 Sector 4
+ *         2. 目标分区已擦除（由调用方负责）
+ *
+ * @param  source_addr   源固件基地址（活跃分区）
+ * @param  target_addr   目标固件基地址（非活跃分区，已擦除）
+ * @param  patch_size    补丁文件大小（字节）
+ * @param  fw_size_out   输出：生成的新固件总大小（含 Footer）
+ * @return 0=成功, -1=janpatch错误
  */
-int JanPatch_Apply(FlashStream_t *source,
-                   FlashStream_t *patch,
-                   FlashStream_t *target,
-                   uint32_t *fw_size_out);
+int8_t JanPatch_ApplyPatch(uint32_t source_addr,
+                             uint32_t target_addr,
+                             uint32_t patch_size,
+                             uint32_t *fw_size_out);
 
 #endif
