@@ -245,6 +245,7 @@ loop_OTA_ReceiveAndFlash:
       else if (ret == YM_RETURN_CODE_EOT)
       {
         uint32_t fw_bin_size = 0;
+        uint32_t fw_total_size;
         FW_SignInfo_t sign_info;
 
         if (is_patch_mode)
@@ -261,27 +262,27 @@ loop_OTA_ReceiveAndFlash:
             }
 
             g_ota_ctx.unlock_cb();
-            int8_t pr = DiffUpdate_ApplyPatch(src_addr, dst_addr,
-                                              g_ym_ctx.file_size, &fw_bin_size);
+            int8_t ret = DiffUpdate_ApplyPatch(src_addr, dst_addr,
+                                              g_ym_ctx.file_size, &fw_total_size);
             g_ota_ctx.lock_cb();
 
-            if (pr != 0)
+            if (ret != 0)
             {
                 bootYM_Abort(&g_ym_ctx);
                 goto err;
             }
 
-            write_addr = dst_addr;
+            write_addr    = dst_addr;
         }
         else
         {
-            fw_bin_size = g_ym_ctx.file_size;
+            fw_total_size = g_ym_ctx.file_size;  /* 全量: 文件大小即固件总大小 */
         }
 
 #if(configUSE_FOOTER)
         {
             /* 1. 解析 Footer + 签名校验 */
-            int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, g_ym_ctx.file_size,
+            int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, fw_total_size,
                                                     &sign_info, &fw_bin_size);
             if (sig_ret != 0)
             {
