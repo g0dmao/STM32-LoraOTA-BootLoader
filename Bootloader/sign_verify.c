@@ -3,6 +3,7 @@
 #include "configBootloader.h"
 #include "hydrogen.h"
 #include <string.h>
+//#include <stdio.h>
 
 #if(configUSE_FOOTER)
 
@@ -56,6 +57,31 @@ int8_t bootSIG_ParseAndVerify(uint32_t fw_addr, uint32_t fw_total_size,
     memcpy(&footer,
            (void*)(fw_addr + fw_total_size - sizeof(FirmwareFooter_t)),
            sizeof(footer));
+
+    // {
+    //     uint32_t footer_addr = fw_addr + fw_total_size - sizeof(FirmwareFooter_t);
+
+    //     /* DEBUG: 打印 Footer 区域原始字节 */
+    //     printf("FOOTER_DBG: fw=0x%08lX total=%lu footer@0x%08lX\r\n",
+    //            (unsigned long)fw_addr, (unsigned long)fw_total_size,
+    //            (unsigned long)footer_addr);
+    //     {
+    //         const uint8_t *raw = (const uint8_t *)footer_addr;
+    //         printf("  raw[0..75]: ");
+    //         for (int i = 0; i < (int)sizeof(FirmwareFooter_t); i++)
+    //         {
+    //             printf("%02X ", raw[i]);
+    //             if ((i + 1) % 16 == 0 && i < 75) printf("\r\n              ");
+    //         }
+    //         printf("\r\n");
+    //     }
+
+    //     memcpy(&footer, (void*)footer_addr, sizeof(footer));
+    //     printf("  version=%lu(0x%08lX) magic=0x%08lX(exp 0x%08lX) size=%lu(exp %u)\r\n",
+    //            (unsigned long)footer.version, (unsigned long)footer.version,
+    //            (unsigned long)footer.footer_magic, (unsigned long)configFOOTER_MAGIC,
+    //            (unsigned long)footer.footer_size, (unsigned int)sizeof(FirmwareFooter_t));
+    // }
 
     /* 3. 校验 footer_size（自描述） */
     if (footer.footer_size != sizeof(FirmwareFooter_t))
