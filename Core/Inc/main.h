@@ -73,6 +73,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define BOOT_Pin LL_GPIO_PIN_0
 #define BOOT_GPIO_Port GPIOA
+#define LoRa_MD0_Pin LL_GPIO_PIN_3
+#define LoRa_MD0_GPIO_Port GPIOB
+#define LoRa_AUX_Pin LL_GPIO_PIN_4
+#define LoRa_AUX_GPIO_Port GPIOB
 #ifndef NVIC_PRIORITYGROUP_0
 #define NVIC_PRIORITYGROUP_0         ((uint32_t)0x00000007) /*!< 0 bit  for pre-emption priority,
                                                                  4 bits for subpriority */

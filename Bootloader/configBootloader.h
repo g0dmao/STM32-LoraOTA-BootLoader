@@ -52,6 +52,21 @@
     #define configRX_BUF_SIZE        2048
 #endif
 
+#define configLORA              Yes
+
+/* ---- Ymodem 超时配置 ---- */
+#if(configLORA)
+    /* LoRa 无线链路：空中帧延迟 + 模块处理延迟 */
+    #define configYM_BYTE_TIMEOUT_MS      500
+    #define configYM_PACKET_TIMEOUT_MS    5000
+    #define configYM_RETRY_COUNT          5
+#else
+    /* 有线串口：低延迟 */
+    #define configYM_BYTE_TIMEOUT_MS      100
+    #define configYM_PACKET_TIMEOUT_MS    3000
+    #define configYM_RETRY_COUNT          10
+#endif
+
 #define configUSE_CUSTOM_FLASH       No
 
 #define configMS_TO_JUMP             3000

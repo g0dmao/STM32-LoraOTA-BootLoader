@@ -6,6 +6,7 @@
 #include "uart_dma_ring.h"
 #include "ota.h"
 #include "flasher.h"
+#include "lora.h"
 
 /* ================================================================
  * 静态辅助函数前向声明
@@ -108,20 +109,22 @@ BootMenu_Action_t BootMenu_Interactive(void)
                     return BOOTMENU_ACTION_JUMP_APP;
 
                 case '2':
-                    printf("\r\nEntering OTA download mode...\r\n\r\n");
+                    printf("\r\nEntering wired Ymodem OTA...\r\n\r\n");
                     return BOOTMENU_ACTION_ENTER_OTA;
 
                 case '3':
-                    printf("\r\n");
-                    PrintOTAParams_();
-                    //PrintMenuPrompt_();
-                    printf("\r\nWaiting input-_-......\r\n\r\n");
-                    break;
+                    printf("\r\nEntering LoRa wireless OTA...\r\n\r\n");
+                    return BOOTMENU_ACTION_ENTER_LORA_OTA;
 
                 case '4':
                     printf("\r\n");
+                    PrintOTAParams_();
+                    printf("\r\nWaiting input-_-......\r\n\r\n");
+                    break;
+
+                case '5':
+                    printf("\r\n");
                     PrintAuthor_();
-                    //PrintMenuPrompt_();
                     printf("\r\nWaiting input-_-......\r\n\r\n");
                     break;
 
@@ -218,9 +221,10 @@ static void PrintMenuPrompt_(void)
     printf("   BootLoader Menu  (~o~)\r\n");
     printf("  -----------------------------------\r\n");
     printf("   1. Jump to Application\r\n");
-    printf("   2. Enter OTA Download Mode\r\n");
-    printf("   3. Display OTA Parameters\r\n");
-    printf("   4. About / Author Info\r\n");
+    printf("   2. Wired Ymodem OTA\r\n");
+    printf("   3. LoRa Wireless OTA\r\n");
+    printf("   4. Display OTA Parameters\r\n");
+    printf("   5. About / Author Info\r\n");
     PrintSeparator_('@', 40);
-    printf("Please select [1-4]: ");
+    printf("Please select [1-5]: ");
 }

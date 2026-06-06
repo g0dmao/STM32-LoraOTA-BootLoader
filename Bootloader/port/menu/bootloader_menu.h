@@ -6,13 +6,15 @@
 /*
     场景	                            行为
 上电 + 无操作	         横幅 → 3秒倒计时 → 校验 → 跳转 APP
-上电 + 按住 PA0	        立即进入 OTA 下载模式
+上电 + 按住 PA0	        立即进入有线 OTA 下载模式
 倒计时期间按回车	     进入交互菜单，循环等待输入
 菜单按 1	           校验并跳转 APP
-菜单按 2	           进入 OTA 下载模式
-菜单按 3	           显示 OTA 参数区数据，然后重新显示菜单
-菜单按 4	           显示作者/项目信息，然后重新显示菜单
+菜单按 2	           进入有线 Ymodem OTA
+菜单按 3	           进入 LoRa 无线 Ymodem OTA
+菜单按 4	           显示 OTA 参数区数据，然后重新显示菜单
+菜单按 5	           显示作者/项目信息，然后重新显示菜单
 菜单按其他键	        提示无效输入，重新显示菜单
+LoRa AUX 拉高         自动进入 LoRa 无线 OTA
 */
 
 /**
@@ -20,10 +22,11 @@
  */
 typedef enum BootMenu_Action
 {
-    BOOTMENU_ACTION_NONE,         /* 无操作，继续等待                */
-    BOOTMENU_ACTION_JUMP_APP,     /* 跳转 APP                       */
-    BOOTMENU_ACTION_ENTER_OTA,    /* 进入 OTA 下载模式              */
-    BOOTMENU_ACTION_ENTER_MENU,   /* 进入交互菜单                   */
+    BOOTMENU_ACTION_NONE,             /* 无操作，继续等待                */
+    BOOTMENU_ACTION_JUMP_APP,         /* 跳转 APP                       */
+    BOOTMENU_ACTION_ENTER_OTA,        /* 进入有线 Ymodem OTA            */
+    BOOTMENU_ACTION_ENTER_LORA_OTA,   /* 进入 LoRa 无线 Ymodem OTA      */
+    BOOTMENU_ACTION_ENTER_MENU,       /* 进入交互菜单                   */
 } BootMenu_Action_t;
 
 /**

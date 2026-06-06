@@ -34,6 +34,7 @@
 #include "sign_verify.h"
 #include "bootloader_menu.h"
 #include "diff_update.h"
+#include "lora.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,6 +58,7 @@
 
 YM_InfoBlock_t g_ym_ctx;
 OTA_Context_t  g_ota_ctx;
+LoRa_Callback_t g_lora_cb;
 
 /* extern from Core/Src/stm32f4xx_it.c */
 extern volatile uint32_t g_sys_tick;
@@ -69,6 +71,8 @@ void SystemClock_Config(void);
 void CloseAllPeripheral(void);
 static void BootloaderInit(void);
 static uint32_t GetTick(void);
+static void LoRa_SetMD0(uint8_t level);
+static uint8_t LoRa_ReadAUX(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -135,6 +139,11 @@ int main(void)
         {
             goto loop_OTA_ConnectAndErase;
         }
+        if (action == BOOTMENU_ACTION_ENTER_LORA_OTA)
+        {
+            bootLoRa_ExitATMode();   /* 确保 LoRa 在透传模式 */
+            goto loop_OTA_ConnectAndErase;
+        }
         if (action == BOOTMENU_ACTION_JUMP_APP)
         {
             goto Check;
@@ -163,6 +172,11 @@ InteractiveMenu:
     {
         goto loop_OTA_ConnectAndErase;
     }
+    if (action == BOOTMENU_ACTION_ENTER_LORA_OTA)
+    {
+        bootLoRa_ExitATMode();   /* 确保 LoRa 在透传模式 */
+        goto loop_OTA_ConnectAndErase;
+    }
     goto err;
   }
 /*-----------------------------------------------*/
@@ -172,6 +186,7 @@ loop_OTA_ConnectAndErase:
 /*-----------------------------------------------*/
 // loop_OTA_ConnectAndErase:
 // 尝试与 Ymodem 上位机建立连接，根据文件名区分全量/差量包并擦除对应区域
+/* -------------------------------------------@START：在此期间调用的所有函数都禁止使用printf！------------------------------------------- */
   {
     for(;;)
     {
@@ -225,6 +240,7 @@ loop_OTA_ConnectAndErase:
 loop_OTA_ReceiveAndFlash:
 /*-----------------------------------------------*/
 // loop_OTA_ReceiveAndFlash: 接收 Ymodem 数据包并写入【非活跃】分区
+
   {
     for(;;)
     {
@@ -240,7 +256,7 @@ loop_OTA_ReceiveAndFlash:
           goto err;
         }
       }
-
+/* -------------------------------------------@END：在此期间调用的所有函数都禁止使用printf！------------------------------------------- */
       /* 烧写结束后的工作 */
       else if (ret == YM_RETURN_CODE_EOT)
       {
@@ -459,6 +475,31 @@ static uint32_t GetTick(void)
   return g_sys_tick;
 }
 
+/**
+ * @brief  MD0 引脚控制（占位，由用户按实际硬件补全）
+ * @param  level  1 = 高电平（AT 模式）; 0 = 低电平（数据模式）
+ */
+static void LoRa_SetMD0(uint8_t level)
+{
+
+  if (level)
+      LL_GPIO_SetOutputPin(LoRa_MD0_GPIO_Port, LoRa_MD0_Pin);
+  else
+      LL_GPIO_ResetOutputPin(LoRa_MD0_GPIO_Port, LoRa_MD0_Pin);
+
+}
+
+/**
+ * @brief  AUX 引脚读取（占位，由用户按实际硬件补全）
+ * @retval 1: 高电平（忙）; 0: 低电平（空闲）
+ */
+static uint8_t LoRa_ReadAUX(void)
+{
+
+    return ((LL_GPIO_ReadInputPort(LoRa_AUX_GPIO_Port) & BOOT_Pin)? 1 : 0);
+
+}
+
 static void BootloaderInit(void)
 {
   g_ym_ctx.read_byte_cb = bootUART_ReadByte;
@@ -473,6 +514,27 @@ static void BootloaderInit(void)
 
   // 初始化用于上位机传输文件的串口，而不是打印调试信息的串口
   bootUART_RegisterTransmitPort();
+
+#if(configLORA)
+  g_lora_cb.read_byte_cb = bootUART_ReadByte;
+  g_lora_cb.send_byte_cb = bootUART_SendByte;
+  g_lora_cb.get_tick_cb  = GetTick;
+  g_lora_cb.set_md0_cb   = LoRa_SetMD0;
+  g_lora_cb.read_aux_cb  = LoRa_ReadAUX;
+
+  int8_t retry = 3 + 1; /* 重试次数为3 */
+  int ret;
+  do {
+    if(retry <= 0)
+    {
+      for(;;);
+    }
+    ret = bootLoRa_Init(&g_lora_cb);
+    retry--;
+  }while (ret != 0);
+
+
+#endif
 
 }
 

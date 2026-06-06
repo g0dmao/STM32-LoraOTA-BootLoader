@@ -54,6 +54,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/port/uart/uart_dma_ring.c
     Bootloader/port/flasher/flasher.c
     Bootloader/port/janpatch/janpatch_port.c
+    Bootloader/port/lora/lora.c
     Bootloader/lib/hydrogen/hydrogen.c
 
 )
@@ -66,6 +67,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/port/uart
     Bootloader/port/janpatch
     Bootloader/port/menu
+    Bootloader/port/lora
     Bootloader/lib/hydrogen
     Bootloader/lib/hydrogen/impl
     Bootloader/lib/hydrogen/impl/gimli-core

@@ -167,7 +167,7 @@ int8_t bootYM_EstablishConnection(YM_InfoBlock_t *ym)
     int8_t status;
 
     ym->send_byte_cb(YM_C);
-    status = ReceivePacket(ym, 1000); // 1秒超时
+    status = ReceivePacket(ym, configYM_PACKET_TIMEOUT_MS);
 
     if(status == YM_RETURN_CODE_OK)
     {
@@ -232,12 +232,12 @@ int8_t bootYM_AccepctOnePacket(YM_InfoBlock_t *ym)
 {
 
     uint8_t eot_count = 0;
-    uint8_t retry_count = 10;
+    uint8_t retry_count = configYM_RETRY_COUNT;
     int8_t status;
 
     while(retry_count > 0)
     {
-        status = ReceivePacket(ym, 3000); // 放宽到3秒超时
+        status = ReceivePacket(ym, configYM_PACKET_TIMEOUT_MS);
 
         switch(status)
         {
