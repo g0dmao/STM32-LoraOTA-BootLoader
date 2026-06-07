@@ -55,9 +55,10 @@
 
 /* USER CODE BEGIN PV */
 
-YM_InfoBlock_t g_ym_ctx;
-OTA_Context_t  g_ota_ctx;
-LoRa_Callback_t g_lora_cb;
+YM_InfoBlock_t   g_ym_ctx;
+OTA_Context_t    g_ota_ctx;
+LoRa_Callback_t  g_lora_cb;
+BootMenu_Context_t g_menu_ctx;
 
 /* extern from Core/Src/stm32f4xx_it.c */
 extern volatile uint32_t g_sys_tick;
@@ -72,6 +73,7 @@ static void BootloaderInit(void);
 static uint32_t GetTick(void);
 static void LoRa_SetMD0(uint8_t level);
 static uint8_t LoRa_ReadAUX(void);
+static uint8_t ReadOtaPin(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -128,7 +130,7 @@ int main(void)
     uint32_t start_time = GetTick();
     for (;;)
     {
-        BootMenu_Action_t action = BootMenu_Poll(GetTick() - start_time);
+        BootMenu_Action_t action = BootMenu_Poll(&g_menu_ctx, GetTick() - start_time);
 
         if (action == BOOTMENU_ACTION_ENTER_OTA)
         {
@@ -171,13 +173,13 @@ InteractiveMenu:
 // InteractiveMenu: 交互菜单模式
 
   {
-    BootMenu_Action_t action = BootMenu_Interactive();
+    BootMenu_Action_t action = BootMenu_Interactive(&g_menu_ctx);
 
     if (action == BOOTMENU_ACTION_JUMP_APP)
     {
         goto Check;
     }
-    if (action == BOOTMENU_ACTION_ENTER_OTA)
+    else if (action == BOOTMENU_ACTION_ENTER_OTA)
     {
         if (OtaDownload_Execute(&g_ym_ctx, &g_ota_ctx, &param) == OTADL_STATUS_OK)
         {
@@ -188,7 +190,7 @@ InteractiveMenu:
             goto err;
         }
     }
-    if (action == BOOTMENU_ACTION_ENTER_LORA_OTA)
+    else if (action == BOOTMENU_ACTION_ENTER_LORA_OTA)
     {
         bootLoRa_ExitATMode();   /* 确保 LoRa 在透传模式 */
         if (OtaDownload_Execute(&g_ym_ctx, &g_ota_ctx, &param) == OTADL_STATUS_OK)
@@ -200,7 +202,44 @@ InteractiveMenu:
             goto err;
         }
     }
-    goto err;
+    else if (action == BOOTMENU_ACTION_PRINT_OTA_PARAMS)
+    {
+        OTA_Param_t ota_param;
+        if (bootOTA_ReadParamOTA(&g_ota_ctx, &ota_param) == 0)
+        {
+            printf("----------------------------------------\r\n");
+            printf("   OTA Parameters  (o..o)\r\n");
+            printf("  -----------------------------------\r\n");
+            printf("  Magic Flag:       0x%08lX", (unsigned long)ota_param.magic_flag);
+            if (ota_param.magic_flag != configOTA_VALID_MAGIC)
+            {
+                printf(" (INVALID!)\r\n");
+            }
+            else
+            {
+                printf(" (VALID)\r\n");
+            }
+            printf("  App Size:         %lu bytes\r\n", ota_param.app_size);
+            printf("  App CRC:          0x%04X\r\n", (uint16_t)ota_param.app_crc);
+            printf("  Active Partition: %c (0x%08lX)\r\n",
+                    (ota_param.active_partition == 0) ? 'A' : 'B',
+                    (unsigned long)((ota_param.active_partition == 0) ? configPART_A_ADDRESS
+                                                                      : configPART_B_ADDRESS));
+            printf("  Current Version:  %lu\r\n", ota_param.current_version);
+            printf("----------------------------------------\r\n");
+        }
+        else
+        {
+            printf("[!] Failed to read OTA parameters!\r\n");
+        }
+        goto InteractiveMenu;
+    }
+    else
+    {
+      goto err;
+    }
+
+
   }
 /*-----------------------------------------------*/
 
@@ -360,6 +399,15 @@ static uint8_t LoRa_ReadAUX(void)
 
 }
 
+/**
+ * @brief  OTA 触发引脚读取（供菜单服务层回调）
+ * @retval 1: PA0 低电平（触发 OTA）; 0: 高电平（未触发）
+ */
+static uint8_t ReadOtaPin(void)
+{
+    return ((LL_GPIO_ReadInputPort(GPIOA) & BOOT_Pin) ? 0 : 1);
+}
+
 static void BootloaderInit(void)
 {
   g_ym_ctx.read_byte_cb = bootUART_ReadByte;
@@ -395,6 +443,9 @@ static void BootloaderInit(void)
 
 
 #endif
+
+  g_menu_ctx.read_byte_cb    = bootUART_ReadByte;
+  g_menu_ctx.read_ota_pin_cb = ReadOtaPin;
 
 }
 

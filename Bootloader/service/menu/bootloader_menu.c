@@ -1,19 +1,13 @@
 #include "bootloader_menu.h"
 
 #include <stdio.h>
-#include "main.h"
 #include "configBootloader.h"
-#include "uart_dma_ring.h"
-#include "ota.h"
-#include "flasher.h"
-#include "lora.h"
 
 /* ================================================================
  * 静态辅助函数前向声明
  * ================================================================ */
 
 static void PrintSeparator_(char ch, int len);
-static void PrintOTAParams_(void);
 static void PrintAuthor_(void);
 static void PrintMenuPrompt_(void);
 
@@ -36,16 +30,17 @@ void BootMenu_PrintBanner(void)
 }
 
 /**
- * @brief  倒计时轮询：检测 PA0、回车键、超时
+ * @brief  倒计时轮询：检测 OTA 引脚、回车键、超时
+ * @param  ctx         菜单上下文（含回调）
  * @param  elapsed_ms  从上电到当前的毫秒数
  * @return 下一步动作
  */
-BootMenu_Action_t BootMenu_Poll(uint32_t elapsed_ms)
+BootMenu_Action_t BootMenu_Poll(BootMenu_Context_t *ctx, uint32_t elapsed_ms)
 {
     static int s_last_remaining = -1;
 
-    /* 1. 检测 PA0 是否拉低 → 进入 OTA */
-    if (!(LL_GPIO_ReadInputPort(GPIOA) & BOOT_Pin))
+    /* 1. 检测 OTA 引脚是否拉低 → 进入 OTA */
+    if (ctx->read_ota_pin_cb())
     {
         printf("\r\n[PA0] Entering OTA download mode...\r\n");
         return BOOTMENU_ACTION_ENTER_OTA;
@@ -53,7 +48,7 @@ BootMenu_Action_t BootMenu_Poll(uint32_t elapsed_ms)
 
     /* 2. 检测串口是否收到回车键 → 进入交互菜单 */
     uint8_t ch;
-    if (bootUART_ReadByte(&ch) == 1)
+    if (ctx->read_byte_cb(&ch) == 1)
     {
         if (ch == '\r' || ch == '\n')
         {
@@ -91,16 +86,17 @@ BootMenu_Action_t BootMenu_Poll(uint32_t elapsed_ms)
 
 /**
  * @brief  进入交互菜单模式，阻塞等待用户输入
- * @return 下一步动作（JUMP_APP 或 ENTER_OTA）
+ * @param  ctx  菜单上下文（含回调）
+ * @return 下一步动作
  */
-BootMenu_Action_t BootMenu_Interactive(void)
+BootMenu_Action_t BootMenu_Interactive(BootMenu_Context_t *ctx)
 {
     PrintMenuPrompt_();
 
     for (;;)
     {
         uint8_t ch;
-        if (bootUART_ReadByte(&ch) == 1)
+        if (ctx->read_byte_cb(&ch) == 1)
         {
             switch (ch)
             {
@@ -118,9 +114,7 @@ BootMenu_Action_t BootMenu_Interactive(void)
 
                 case '4':
                     printf("\r\n");
-                    PrintOTAParams_();
-                    printf("\r\nWaiting input-_-......\r\n\r\n");
-                    break;
+                    return BOOTMENU_ACTION_PRINT_OTA_PARAMS;
 
                 case '5':
                     printf("\r\n");
@@ -158,43 +152,6 @@ static void PrintSeparator_(char ch, int len)
         printf("%c", ch);
     }
     printf("\r\n");
-}
-
-/**
- * @brief  打印 OTA 参数区数据
- */
-static void PrintOTAParams_(void)
-{
-    OTA_Context_t ctx = {0};
-    ctx.read_cb  = bootFlasher_ReadData;
-
-    OTA_Param_t param;
-    if (bootOTA_ReadParamOTA(&ctx, &param) != 0)
-    {
-        printf("[!] Failed to read OTA parameters!\r\n");
-        return;
-    }
-
-    PrintSeparator_('-', 40);
-    printf("   OTA Parameters  (o..o)\r\n");
-    printf("  -----------------------------------\r\n");
-    printf("  Magic Flag:       0x%08lX", (unsigned long)param.magic_flag);
-    if (param.magic_flag != configOTA_VALID_MAGIC)
-    {
-        printf(" (INVALID!)\r\n");
-    }
-    else
-    {
-        printf(" (VALID)\r\n");
-    }
-    printf("  App Size:         %lu bytes\r\n", param.app_size);
-    printf("  App CRC:          0x%04X\r\n", (uint16_t)param.app_crc);
-    printf("  Active Partition: %c (0x%08lX)\r\n",
-           (param.active_partition == 0) ? 'A' : 'B',
-           (unsigned long)((param.active_partition == 0) ? configPART_A_ADDRESS
-                                                          : configPART_B_ADDRESS));
-    printf("  Current Version:  %lu\r\n", param.current_version);
-    PrintSeparator_('-', 40);
 }
 
 /**

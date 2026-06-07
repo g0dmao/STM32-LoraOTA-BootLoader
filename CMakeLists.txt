@@ -49,15 +49,14 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/service/ymodem/ymodem.c
     Bootloader/service/sign_verify/sign_verify.c
     Bootloader/service/diff_update/diff_update.c
+    Bootloader/service/menu/bootloader_menu.c
     Bootloader/component/bootloader/bootloader.c
-    Bootloader/component/menu/bootloader_menu.c
     Bootloader/component/ota_download/ota_download.c
     Bootloader/port/janpatch/janpatch_port.c
     Bootloader/port/driver/uart/uart_dma_ring.c
     Bootloader/port/driver/flasher/flasher.c
-    Bootloader/hardware/lora/lora.c
     Bootloader/lib/hydrogen/hydrogen.c
-
+    Bootloader/hardware/lora/lora.c
 )
 
 # Add include paths
@@ -68,8 +67,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Bootloader/service/ymodem
     Bootloader/service/sign_verify
     Bootloader/service/diff_update
+    Bootloader/service/menu
     Bootloader/component/bootloader
-    Bootloader/component/menu
     Bootloader/component/ota_download
     Bootloader/port/janpatch
     Bootloader/port/driver/flasher
