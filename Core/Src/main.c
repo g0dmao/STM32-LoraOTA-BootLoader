@@ -31,9 +31,8 @@
 #include "ymodem.h"
 #include "flasher.h"
 #include "ota.h"
-#include "sign_verify.h"
+#include "ota_download.h"
 #include "bootloader_menu.h"
-#include "diff_update.h"
 #include "lora.h"
 /* USER CODE END Includes */
 
@@ -121,10 +120,6 @@ int main(void)
   BootMenu_PrintBanner();
 
   OTA_Param_t param;
-  uint32_t write_offset = 0;
-  uint32_t write_addr   = 0;
-  int      sector = 0, sector_num = 0;
-  uint8_t  is_patch_mode = 0;
 
 
 /*-----------------------------------------------*/
@@ -137,12 +132,26 @@ int main(void)
 
         if (action == BOOTMENU_ACTION_ENTER_OTA)
         {
-            goto loop_OTA_ConnectAndErase;
+            if (OtaDownload_Execute(&g_ym_ctx, &g_ota_ctx, &param) == OTADL_STATUS_OK)
+            {
+                goto Jump;
+            }
+            else
+            {
+                goto err;
+            }
         }
         if (action == BOOTMENU_ACTION_ENTER_LORA_OTA)
         {
             bootLoRa_ExitATMode();   /* 确保 LoRa 在透传模式 */
-            goto loop_OTA_ConnectAndErase;
+            if (OtaDownload_Execute(&g_ym_ctx, &g_ota_ctx, &param) == OTADL_STATUS_OK)
+            {
+                goto Jump;
+            }
+            else
+            {
+                goto err;
+            }
         }
         if (action == BOOTMENU_ACTION_JUMP_APP)
         {
@@ -170,180 +179,31 @@ InteractiveMenu:
     }
     if (action == BOOTMENU_ACTION_ENTER_OTA)
     {
-        goto loop_OTA_ConnectAndErase;
+        if (OtaDownload_Execute(&g_ym_ctx, &g_ota_ctx, &param) == OTADL_STATUS_OK)
+        {
+            goto Jump;
+        }
+        else
+        {
+            goto err;
+        }
     }
     if (action == BOOTMENU_ACTION_ENTER_LORA_OTA)
     {
         bootLoRa_ExitATMode();   /* 确保 LoRa 在透传模式 */
-        goto loop_OTA_ConnectAndErase;
+        if (OtaDownload_Execute(&g_ym_ctx, &g_ota_ctx, &param) == OTADL_STATUS_OK)
+        {
+            goto Jump;
+        }
+        else
+        {
+            goto err;
+        }
     }
     goto err;
   }
 /*-----------------------------------------------*/
 
-
-loop_OTA_ConnectAndErase:
-/*-----------------------------------------------*/
-// loop_OTA_ConnectAndErase:
-// 尝试与 Ymodem 上位机建立连接，根据文件名区分全量/差量包并擦除对应区域
-/* -------------------------------------------@START：在此期间调用的所有函数都禁止使用printf！------------------------------------------- */
-  {
-    for(;;)
-    {
-      if(bootYM_EstablishConnection(&g_ym_ctx) == YM_RETURN_CODE_OK)
-      {
-        /* 检查文件名是否包含 "_patch" → 差量更新包 */
-        {
-            const char *p = g_ym_ctx.file_name;
-            is_patch_mode = 0;
-            while (*p)
-            {
-                if (p[0] == '_' && p[1] == 'p' && p[2] == 'a' &&
-                    p[3] == 't' && p[4] == 'c' && p[5] == 'h')
-                {
-                    is_patch_mode = 1;
-                    break;
-                }
-                p++;
-            }
-        }
-
-        if (is_patch_mode)
-        {
-            /* 差量包：擦除 Sector 4（补丁暂存区） */
-            if (g_ota_ctx.erase_cb(configPATCH_STORAGE_SECTOR,
-                                    configPATCH_STORAGE_SECTOR_NUM) != 0)
-            {
-                bootYM_Abort(&g_ym_ctx);
-                goto err;
-            }
-            write_addr = configPATCH_STORAGE_ADDRESS;
-        }
-        else
-        {
-            /* 全量包：擦除非活跃分区 */
-            bootOTA_GetInactivePartitionEraseInfo(&param, &sector, &sector_num);
-            if (g_ota_ctx.erase_cb(sector, sector_num) != 0)
-            {
-                bootYM_Abort(&g_ym_ctx);
-                goto err;
-            }
-            write_addr = bootOTA_GetInactivePartitionAddr(&param);
-        }
-        goto loop_OTA_ReceiveAndFlash;
-      }
-    }
-  }
-/*-----------------------------------------------*/
-
-
-loop_OTA_ReceiveAndFlash:
-/*-----------------------------------------------*/
-// loop_OTA_ReceiveAndFlash: 接收 Ymodem 数据包并写入【非活跃】分区
-
-  {
-    for(;;)
-    {
-      int8_t ret = bootYM_AccepctOnePacket(&g_ym_ctx);
-
-      /* 烧写 */
-      if (ret == YM_RETURN_CODE_OK)
-      {
-        write_offset = g_ym_ctx.total_receive_byte - g_ym_ctx.packet_len;
-        if(g_ota_ctx.write_cb(write_addr + write_offset, g_ym_ctx.packet_data, g_ym_ctx.packet_len) != 0)
-        {
-          bootYM_Abort(&g_ym_ctx);
-          goto err;
-        }
-      }
-/* -------------------------------------------@END：在此期间调用的所有函数都禁止使用printf！------------------------------------------- */
-      /* 烧写结束后的工作 */
-      else if (ret == YM_RETURN_CODE_EOT)
-      {
-        uint32_t fw_bin_size = 0;
-        uint32_t fw_total_size;
-        FW_SignInfo_t sign_info;
-
-        if (is_patch_mode)
-        {
-            /* 差量模式：擦除非活跃分区 → 应用 JANPatch 补丁 */
-            uint32_t src_addr = bootOTA_GetActivePartitionAddr(&param);
-            uint32_t dst_addr = bootOTA_GetInactivePartitionAddr(&param);
-
-            bootOTA_GetInactivePartitionEraseInfo(&param, &sector, &sector_num);
-            if (g_ota_ctx.erase_cb(sector, sector_num) != 0)
-            {
-                bootYM_Abort(&g_ym_ctx);
-                goto err;
-            }
-
-            g_ota_ctx.unlock_cb();
-            int8_t ret = bootDiff_ApplyPatch(src_addr, dst_addr,
-                                              g_ym_ctx.file_size, &fw_total_size);
-            g_ota_ctx.lock_cb();
-
-            if (ret != 0)
-            {
-                bootYM_Abort(&g_ym_ctx);
-                goto err;
-            }
-
-            write_addr    = dst_addr;
-        }
-        else
-        {
-            fw_total_size = g_ym_ctx.file_size;  /* 全量: 文件大小即固件总大小 */
-        }
-
-#if(configUSE_FOOTER)
-        {
-            /* 1. 解析 Footer + 签名校验 */
-            int8_t sig_ret = bootSIG_ParseAndVerify(write_addr, fw_total_size,
-                                                    &sign_info, &fw_bin_size);
-            if (sig_ret != 0)
-            {
-                printf("SIG_ERR: %d\r\n", sig_ret);
-                bootYM_Abort(&g_ym_ctx);
-                goto err;
-            }
-
-  #if(!configROLLBACK_ENABLE)
-            /* 2. 防回滚检查：新版本号必须 >= 当前版本号 */
-            if (sign_info.version < param.current_version)
-            {
-                printf("ROLLBACK: v%lu < v%lu\r\n", sign_info.version,
-                      param.current_version);
-                bootYM_Abort(&g_ym_ctx);
-                goto err;
-            }
-  #endif
-        }
-#else
-        sign_info.version = 0xFFFFFFFF;
-#endif
-
-        /* 3. CRC 校验（仅固件本体，不含 Footer） */
-        OTA_Param_t new_param = {
-          .app_size   = fw_bin_size,
-          .app_crc    = CalcCRC16((uint8_t*)write_addr, fw_bin_size),
-          .active_partition = (uint8_t)((param.active_partition == 0) ? 1 : 0),
-          .current_version  = sign_info.version,
-          .reserved   = {0xFF, 0xFF, 0xFF}
-        };
-
-        bootOTA_SaveParamOTA(&g_ota_ctx, &new_param);
-
-        param.active_partition = new_param.active_partition;
-        param.current_version  = new_param.current_version;
-        goto Jump;
-      }else
-      {
-        bootYM_Abort(&g_ym_ctx);
-        goto err;
-      }
-    }
-  }
-/*-----------------------------------------------*/
 
 
 Check:

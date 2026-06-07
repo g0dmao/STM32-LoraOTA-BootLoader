@@ -45,16 +45,17 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    Bootloader/bootloader.c
-    Bootloader/ymodem.c
-    Bootloader/ota.c
-    Bootloader/sign_verify.c
-    Bootloader/diff_update.c
-    Bootloader/port/menu/bootloader_menu.c
-    Bootloader/port/uart/uart_dma_ring.c
-    Bootloader/port/flasher/flasher.c
+    Bootloader/service/ota/ota.c
+    Bootloader/service/ymodem/ymodem.c
+    Bootloader/service/sign_verify/sign_verify.c
+    Bootloader/service/diff_update/diff_update.c
+    Bootloader/component/bootloader/bootloader.c
+    Bootloader/component/menu/bootloader_menu.c
+    Bootloader/component/ota_download/ota_download.c
     Bootloader/port/janpatch/janpatch_port.c
-    Bootloader/port/lora/lora.c
+    Bootloader/port/driver/uart/uart_dma_ring.c
+    Bootloader/port/driver/flasher/flasher.c
+    Bootloader/hardware/lora/lora.c
     Bootloader/lib/hydrogen/hydrogen.c
 
 )
@@ -63,16 +64,22 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Bootloader
-    Bootloader/port/flasher
-    Bootloader/port/uart
+    Bootloader/service/ota
+    Bootloader/service/ymodem
+    Bootloader/service/sign_verify
+    Bootloader/service/diff_update
+    Bootloader/component/bootloader
+    Bootloader/component/menu
+    Bootloader/component/ota_download
     Bootloader/port/janpatch
-    Bootloader/port/menu
-    Bootloader/port/lora
+    Bootloader/port/driver/flasher
+    Bootloader/port/driver/uart
     Bootloader/lib/hydrogen
     Bootloader/lib/hydrogen/impl
     Bootloader/lib/hydrogen/impl/gimli-core
     Bootloader/lib/hydrogen/impl/random
     Bootloader/lib/janpatch
+    Bootloader/hardware/lora
 
 )
 
