@@ -1,6 +1,6 @@
-# GoDm BootLoader 移植指南 (基于 STM32CubeMX)
+# STM32-LoraOTA-BootLoader 移植指南 (基于 STM32CubeMX)
 
-> **适用场景**: 将 GoDm BootLoader 从 STM32F411CEU6 移植到其他 STM32 系列 MCU
+> **适用场景**: 将 STM32-LoraOTA-BootLoader 从 STM32F411CEU6 移植到其他 STM32 系列 MCU
 
 > **先决条件**: 已阅读 [技术实现文档 (README.md)](README.md) 理解项目架构
 
@@ -1033,6 +1033,6 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
 > **最后更新**: 2026-06-10
 
-> **参考项目**: GoDm BootLoader for STM32F411CEU6
+> **参考项目**: STM32-LoraOTA-BootLoader
 
 > **相关文档**: [技术实现文档 (README.md)](README.md)

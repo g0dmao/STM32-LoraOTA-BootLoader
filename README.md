@@ -1,16 +1,21 @@
 # 面向 STM32 平台的 OTA 安全固件升级系统 BootLoader 技术实现文档
 
-> **项目名称**: GoDm BootLoader
+> **项目名称**: STM32-LoraOTA-BootLoader
 
 > **目标平台**: STM32F411CEU6 (Cortex-M4, 512KB Flash, 128KB RAM)
 
-> **构建系统**: CMake + ARM GCC (bare-metal)
+> **构建系统**: CMake 3.22+, ARM GCC (arm-none-eabi)
 
-> **作者**: GoDm@
+> **作者**: [GoDm@](https://github.com/g0dmao)
 
-****该文档由 DeepSeek-v4-pro 生成***
+**该项目使用到的开源库:**
 
-想将此项目移植到其他 STM32 系列 MCU，请参见[移植指南 (PORTING.md)](PORTING.md)
+- [janpatch | Apache 2.0 License](https://github.com/janjongboom/janpatch)
+- [libhydrogen | ISC License](https://github.com/jedisct1/libhydrogen)
+
+**想将此项目移植到其他 STM32 系列 MCU，请参见[移植指南 (PORTING.md)](PORTING.md)**
+
+****该文档由 Deepseek-v4-pro 生成***
 
 ---
 
@@ -41,7 +46,7 @@
 
 ## 1. 系统概述
 
-GoDm BootLoader 是一个为 STM32F411CEU6 设计的嵌入式引导加载程序，支持通过**有线串口 (UART)** 和 **无线 LoRa** 两种通道对固件进行 **OTA (Over-The-Air) 升级**。
+STM32-LoraOTA-BootLoader 是一个为 STM32F411CEU6 设计的嵌入式引导加载程序，支持通过**有线串口 (UART)** 和 **无线 LoRa** 两种通道对固件进行 **OTA (Over-The-Air) 升级**。
 
 ### 核心能力
 
@@ -863,7 +868,3 @@ main.c
 > **文档版本**: 1.0
 
 > **最后更新**: 2026-06-10
-
-> **适用硬件**: STM32F411CEU6 (Cortex-M4)
-
-> **构建系统**: CMake 3.22+, ARM GCC (arm-none-eabi)
