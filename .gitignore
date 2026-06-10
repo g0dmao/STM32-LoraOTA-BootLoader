@@ -3,3 +3,5 @@ bin/
 .claude/
 .vscode/
 doc/
+tools/bin
+tools/build
